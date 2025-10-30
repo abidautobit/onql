@@ -177,13 +177,19 @@ func (e *Evaluator) EvalSlice() error {
 	if start < 0 {
 		start = 0
 	}
+	if start > len(arr) {
+		start = len(arr)
+	}
 	if end > len(arr) {
 		end = len(arr)
 	}
-	if start > end {
-		start, end = end, start
+	if end < 0 {
+		end = 0
 	}
-
+	// INFO: We can support backward slicing with negative step in future
+	if start > end {
+		return errors.ErrUnsupported
+	}
 	// Build the sliced result
 	result := make([]interface{}, 0)
 	for i := start; i < end; i += step {
