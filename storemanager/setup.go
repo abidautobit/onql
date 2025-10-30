@@ -34,15 +34,15 @@ func getStorageMap(db, table string) map[string]string {
 	return storageMap
 }
 
-func getTypeMap(db, table string) map[string]string {
-	typeMap := make(map[string]string)
-	if tableSchema, ok := FullSchema[db][table]; ok {
-		for col, meta := range tableSchema {
-			typeMap[col] = meta["type"]
-		}
-	}
-	return typeMap
-}
+// func getTypeMap(db, table string) map[string]string {
+// 	typeMap := make(map[string]string)
+// 	if tableSchema, ok := FullSchema[db][table]; ok {
+// 		for col, meta := range tableSchema {
+// 			typeMap[col] = meta["type"]
+// 		}
+// 	}
+// 	return typeMap
+// }
 
 // for read only operations
 // var readDiskStore map[string]*engine.BadgerDB

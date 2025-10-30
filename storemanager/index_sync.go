@@ -17,13 +17,13 @@ var (
 	indexBuffer      = make(map[string]*indexEntry) // map[indexKey]*indexEntry
 	indexBufferMutex sync.Mutex
 	bufferLimit      = 500
-	flushInterval    = 100 * time.Millisecond
+	flushInterval    = 500 * time.Millisecond
 
 	// Deletion buffer
 	indexDeleteBuffer      = make(map[string]*indexEntry)
 	indexDeleteBufferMutex sync.Mutex
 	deleteBufferLimit      = 500
-	deleteFlushInterval    = 100 * time.Millisecond
+	deleteFlushInterval    = 500 * time.Millisecond
 )
 
 // InitIndexSystem initializes background flushers for both insert and delete index buffers.

@@ -24,7 +24,7 @@ func SaveIndex(data Data, prevData Data) error {
 	if len(prevData.columns) > 0 {
 		oldIndexes := GenIndex(prevData)
 		for _, oldIndex := range oldIndexes {
-			go AddToDeleteBuffer(oldIndex, pk)
+			 AddToDeleteBuffer(oldIndex, pk)
 		}
 	}
 
@@ -32,7 +32,7 @@ func SaveIndex(data Data, prevData Data) error {
 	newIndexes := GenIndex(data)
 	for _, newIndex := range newIndexes {
 		// fmt.Println("Adding index:", newIndex, "for PK:", pk)
-		go AddToIndexBuffer(newIndex, pk)
+		 AddToIndexBuffer(newIndex, pk)
 	}
 
 	return nil
@@ -47,7 +47,7 @@ func DeleteIndex(data Data) error {
 
 	indexKeys := GenIndex(data)
 	for _, indexKey := range indexKeys {
-		go AddToDeleteBuffer(indexKey, pk) // Use goroutine
+		 AddToDeleteBuffer(indexKey, pk) // Use goroutine
 	}
 	return nil
 }

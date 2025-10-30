@@ -15,7 +15,7 @@ var (
 	dataRamStorage      = make(map[string]dbdata) // map[dataKey]dbdata
 	dataRamStorageMutex sync.Mutex
 	dataBufferLimit     = 500
-	dataFlushInterval   = 100 * time.Millisecond
+	dataFlushInterval   = 500 * time.Millisecond
 )
 
 // InitIndexSystem initializes background flushers for both insert and delete index buffers.

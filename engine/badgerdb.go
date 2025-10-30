@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	// "io"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4/options"
@@ -244,3 +245,9 @@ func (b *BadgerDB) ConnectReadOnly(filepath string) error {
 	b.db = db
 	return nil
 }
+
+// Backup creates a backup of the database to the given writer.
+// func (b *BadgerDB) Backup(w io.Writer) error {
+// 	_, err := b.db.Backup(w, 0)
+// 	return err
+// }
