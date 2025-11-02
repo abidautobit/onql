@@ -39,8 +39,8 @@ func (plan *Plan) ParseIdentifier(stmt *Statement) error {
 	if (prevStmt.Meta != nil && prevStmt.Meta["return_type"] == "TABLE") || prevStmt.Operation == OpAccessTable || prevStmt.Operation == OpAccessRelatedTable || prevStmt.Operation == OpStartFilter || prevStmt.Operation == OpEndFilter || prevStmt.Operation == OpSlice || prevStmt.Operation == OpStartProjectionKey || prevStmt.Operation == OpEndProjectionKey {
 		return plan.parseIdentifierTableOrRelated(stmt, prevStmt, token)
 	}
-	// If previous op is list/row/field/unknown, handle as aggr/field/json
-	if prevStmt.Operation == OpAccessList || prevStmt.Operation == OpAccessRow || prevStmt.Operation == OpAccessField || prevStmt.Operation == OpUnknownIdentifier || prevStmt.Operation == OpAggregateReduce {
+	// If previous op is list/row/field/json/unknown, handle as aggr/field/json
+	if prevStmt.Operation == OpAccessList || prevStmt.Operation == OpAccessRow || prevStmt.Operation == OpAccessField || prevStmt.Operation == OpAccessJsonProperty || prevStmt.Operation == OpUnknownIdentifier || prevStmt.Operation == OpAggregateReduce {
 		return plan.parseIdentifierListOrRowOrFieldOrAggr(stmt, prevStmt, token)
 	}
 
@@ -110,8 +110,8 @@ func (plan *Plan) parseIdentifierListOrRowOrFieldOrAggr(stmt *Statement, prevStm
 				return err
 			}
 		} else {
-			// Aggregate or json (not implemented)
-			err := plan.ParseUnknownIdentifier(stmt, prevStmt)
+			// Parse as JSON property access
+			err := plan.ParseJsonProperty(stmt, prevStmt)
 			if err != nil {
 				return err
 			}
@@ -138,7 +138,7 @@ func (plan *Plan) parseIdentifierListOrRowOrFieldOrAggr(stmt *Statement, prevStm
 			return fmt.Errorf("expect field or aggregate but got %s", token.Value)
 		}
 	case OpAccessField:
-		// Aggregate or json (not implemented)
+		// Aggregate or JSON property access
 		if plan.IsAggr(token.Value) {
 			err := plan.ParseAggr(stmt, prevStmt.Name)
 			if err != nil {
@@ -146,48 +146,106 @@ func (plan *Plan) parseIdentifierListOrRowOrFieldOrAggr(stmt *Statement, prevStm
 			}
 			return nil
 		} else {
-			//parse unknown identifier
-			err := plan.ParseUnknownIdentifier(stmt, prevStmt)
+			// Parse as JSON property access
+			err := plan.ParseJsonProperty(stmt, prevStmt)
 			if err != nil {
 				return err
 			}
 			return nil
 		}
-	case OpUnknownIdentifier:
-		// Aggregate or json (not implemented)
-		err := plan.ParseUnknownIdentifier(stmt, prevStmt)
-		if err != nil {
-			return err
+	case OpAccessJsonProperty, OpUnknownIdentifier:
+		// Check if it's an aggregate function first
+		if plan.IsAggr(token.Value) {
+			err := plan.ParseAggr(stmt, prevStmt.Name)
+			if err != nil {
+				return err
+			}
+			return nil
+		} else {
+			// Parse as JSON property access
+			err := plan.ParseJsonProperty(stmt, prevStmt)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
-		// Aggregate or json (not implemented)
-		// if plan.IsAggr(token.Value) {
-		// 	err := plan.ParseAggr(stmt, prevStmt.Name)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	return nil
-		// } else {
-		// 	//parse unknown identifier
-		// 	err := plan.ParseUnknownIdentifier(stmt, prevStmt)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	return nil
-		// }
 	}
 	return nil
 }
 
-func (plan *Plan) ParseUnknownIdentifier(stmt *Statement, prevStmt *Statement) error {
-	//expect identifier here
+// ParseJsonProperty parses a JSON property access on validated JSON data
+func (plan *Plan) ParseJsonProperty(stmt *Statement, prevStmt *Statement) error {
 	token := plan.lexer.Next(true)
 	if token.Type != TOKEN_IDENTIFIER {
 		return fmt.Errorf("expect identifier but got %s", token.Value)
 	}
-	stmt.Operation = OpUnknownIdentifier
+
+	// Validate that parent is actually JSON type
+	isJsonParent := plan.isJsonType(prevStmt)
+
+	if isJsonParent {
+		stmt.Operation = OpAccessJsonProperty
+		stmt.Meta = map[string]string{
+			"property_name": token.Value,
+			"type":          "json",
+		}
+	} else {
+		// Not JSON - treat as unknown identifier
+		stmt.Operation = OpUnknownIdentifier
+		stmt.Meta = map[string]string{
+			"property_name": token.Value,
+			"type":          "unknown",
+		}
+	}
+
 	stmt.Sources[0] = NewSource("var", prevStmt.Name)
 	stmt.Expressions = token.Value
 	return nil
+}
+
+// isJsonType checks if a statement represents JSON data
+func (plan *Plan) isJsonType(stmt *Statement) bool {
+	if stmt == nil {
+		return false
+	}
+
+	// Check statement metadata for JSON type
+	if stmt.Meta != nil {
+		stmtType, ok := stmt.Meta["type"]
+		if ok && stmtType == "json" {
+			return true
+		}
+	}
+
+	// Check based on operation type
+	switch stmt.Operation {
+	case OpAccessJsonProperty:
+		// Chained JSON property access
+		return true
+	case OpAccessList:
+		// Check if the column is JSON type
+		return stmt.Meta != nil && stmt.Meta["type"] == "json"
+	case OpAccessField:
+		// Check if the field is JSON type
+		return stmt.Meta != nil && stmt.Meta["type"] == "json"
+	case OpAggregateReduce:
+		// Check if aggregate returns JSON
+		return stmt.Meta != nil && stmt.Meta["return_type"] == "JSON"
+	default:
+		return false
+	}
+}
+
+// ParseUnknownIdentifier is deprecated - use ParseJsonProperty instead
+// Kept for backward compatibility
+func (plan *Plan) ParseUnknownIdentifier(stmt *Statement, prevStmt *Statement) error {
+	return plan.ParseJsonProperty(stmt, prevStmt)
+}
+
+// ParseJsonField is deprecated - use ParseJsonProperty instead
+// Kept for backward compatibility
+func (plan *Plan) ParseJsonField(stmt *Statement, prevStmt *Statement) error {
+	return plan.ParseJsonProperty(stmt, prevStmt)
 }
 
 func (plan *Plan) ParseParentKeyword(stmt *Statement, prevStmt *Statement) error {

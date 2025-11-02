@@ -202,7 +202,7 @@ func (e *Evaluator) EvalRelatedTable() error {
 	if e.isUnderFilter(stmt.Name) || e.IsUnderProjection(stmt.Name) {
 		val, ok := e.Memory[stmt.Sources[1].SourceValue].(map[string]interface{})
 		if !ok {
-			return fmt.Errorf("host table data not found for geting related table data %s")
+			return fmt.Errorf("host table data not found for getting related table data")
 		}
 		data, err := GetRelatedTableData(stmt.Meta["db"], *stmt.Expressions.(*storemanager.Relation), val[fkKey].(string))
 		if err != nil {
@@ -212,7 +212,7 @@ func (e *Evaluator) EvalRelatedTable() error {
 	} else {
 		tabledata, ok := e.Memory[stmt.Sources[1].SourceValue].([]map[string]interface{})
 		if !ok {
-			return fmt.Errorf("host table data not found for geting related table data %s")
+			return fmt.Errorf("host table data not found for getting related table data")
 		}
 		for _, val := range tabledata {
 			data, err := GetRelatedTableData(stmt.Meta["db"], *stmt.Expressions.(*storemanager.Relation), val[fkKey].(string))

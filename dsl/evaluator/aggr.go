@@ -60,19 +60,33 @@ func (e *Evaluator) EvalAggr() error {
 
 func _sum(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
 	total := 0.0
-	list := make([]float64, 0)
-	if stmt.Meta["input_type"] == "TABLE" {
-		for _, row := range data.([]map[string]interface{}) {
-			list = append(list, row[aggrObj.Args[0]].(float64))
+
+	switch t := data.(type) {
+	case []float64:
+		for _, v := range t {
+			total += v
 		}
-	} else {
-		list = data.([]float64)
+	case []map[string]interface{}:
+		if len(aggrObj.Args) == 0 {
+			return fmt.Errorf("_sum: missing column name")
+		}
+		col := aggrObj.Args[0]
+		for _, row := range t {
+			if f, ok := asFloat64(row[col]); ok {
+				total += f
+			}
+		}
+	case []interface{}:
+		// Handle JSON data from unknown identifiers
+		for _, item := range t {
+			if f, ok := asFloat64(item); ok {
+				total += f
+			}
+		}
+	default:
+		return fmt.Errorf("_sum: unsupported input %T", data)
 	}
-	for _, v := range list {
-		total += v
-	}
-	// e.Memory[stmt.Name] = total
-	// e.Memory[stmt.Name+"_meta_type"] = "NUMBER"
+
 	e.SetMemoryValue(stmt.Name, total)
 	return nil
 }
@@ -152,15 +166,43 @@ func _asc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		e.SetMemoryValue(stmt.Name, v)
 		return nil
 
+	// ---------- LIST (interface) - JSON data ----------
+	case []interface{}:
+		sort.SliceStable(v, func(i, j int) bool {
+			vi, vj := v[i], v[j]
+
+			// nils last
+			if vi == nil && vj == nil {
+				return false
+			}
+			if vi == nil {
+				return false
+			}
+			if vj == nil {
+				return true
+			}
+
+			// numeric compare if both numeric, else string compare
+			if fi, ok := asFloat64(vi); ok {
+				if fj, ok := asFloat64(vj); ok {
+					return fi < fj
+				}
+			}
+			si := fmt.Sprint(vi)
+			sj := fmt.Sprint(vj)
+			return si < sj
+		})
+		e.SetMemoryValue(stmt.Name, v)
+		return nil
+
 	default:
-		return fmt.Errorf("sort: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64), got %T", data)
+		return fmt.Errorf("sort: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64/[]interface{}), got %T", data)
 	}
 }
 
 // _sortDesc orders data in DESC order.
 // TABLE: sorts by args left→right (col1 DESC, then col2 DESC, ...).
-// LIST: sorts []float64 or []string in descending order.
-// []interface{} is not supported for lists.
+// LIST: sorts []float64, []string, or []interface{} in descending order.
 func _desc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
 	switch v := data.(type) {
 
@@ -234,8 +276,37 @@ func _desc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 		e.SetMemoryValue(stmt.Name, v)
 		return nil
 
+	// ---------- LIST (interface) - JSON data ----------
+	case []interface{}:
+		sort.SliceStable(v, func(i, j int) bool {
+			vi, vj := v[i], v[j]
+
+			// nils last
+			if vi == nil && vj == nil {
+				return false
+			}
+			if vi == nil {
+				return false
+			}
+			if vj == nil {
+				return true
+			}
+
+			// numeric compare if both numeric, else string compare
+			if fi, ok := asFloat64(vi); ok {
+				if fj, ok := asFloat64(vj); ok {
+					return fi > fj // DESC
+				}
+			}
+			si := fmt.Sprint(vi)
+			sj := fmt.Sprint(vj)
+			return si > sj // DESC
+		})
+		e.SetMemoryValue(stmt.Name, v)
+		return nil
+
 	default:
-		return fmt.Errorf("sortDesc: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64), got %T", data)
+		return fmt.Errorf("sortDesc: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64/[]interface{}), got %T", data)
 	}
 }
 
@@ -250,6 +321,9 @@ func _count(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Ev
 		n = len(v)
 	case []map[string]interface{}:
 		// supports count on table rows as well
+		n = len(v)
+	case []interface{}:
+		// Handle JSON data from unknown identifiers
 		n = len(v)
 	default:
 		return fmt.Errorf("_count: unsupported input %T", data)
@@ -274,6 +348,14 @@ func _avg(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		col := aggrObj.Args[0]
 		for _, r := range t {
 			if f, ok := asFloat64(r[col]); ok {
+				sum += f
+				cnt++
+			}
+		}
+	case []interface{}:
+		// Handle JSON data from unknown identifiers
+		for _, item := range t {
+			if f, ok := asFloat64(item); ok {
 				sum += f
 				cnt++
 			}
@@ -314,6 +396,16 @@ func _min(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				}
 			}
 		}
+	case []interface{}:
+		// Handle JSON data from unknown identifiers
+		for _, item := range t {
+			if f, ok := asFloat64(item); ok {
+				if !minSet || f < minVal {
+					minVal = f
+					minSet = true
+				}
+			}
+		}
 	default:
 		return fmt.Errorf("_min: unsupported input %T", data)
 	}
@@ -344,6 +436,16 @@ func _max(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		col := aggrObj.Args[0]
 		for _, r := range t {
 			if f, ok := asFloat64(r[col]); ok {
+				if !maxSet || f > maxVal {
+					maxVal = f
+					maxSet = true
+				}
+			}
+		}
+	case []interface{}:
+		// Handle JSON data from unknown identifiers
+		for _, item := range t {
+			if f, ok := asFloat64(item); ok {
 				if !maxSet || f > maxVal {
 					maxVal = f
 					maxSet = true
@@ -392,6 +494,22 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		e.SetMemoryValue(stmt.Name, out)
 		return nil
 
+	// ---------- LIST (interface) - JSON data ----------
+	case []interface{}:
+		seen := make(map[string]struct{}, len(t))
+		out := make([]interface{}, 0, len(t))
+		for _, item := range t {
+			// Use string representation as key for deduplication
+			key := fmt.Sprint(item)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, item)
+		}
+		e.SetMemoryValue(stmt.Name, out)
+		return nil
+
 	// ---------- TABLE ----------
 	case []map[string]interface{}:
 		if len(aggrObj.Args) == 0 {
@@ -422,7 +540,7 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		return nil
 
 	default:
-		return fmt.Errorf("_distinct: expected LIST ([]string/[]float64) or TABLE ([]map[string]interface{}), got %T", data)
+		return fmt.Errorf("_distinct: expected LIST ([]string/[]float64/[]interface{}) or TABLE ([]map[string]interface{}), got %T", data)
 	}
 }
 

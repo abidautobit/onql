@@ -11,27 +11,27 @@ import (
 
 // func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (interface{}, error) {
 
-// 	if protoPass == "" {
-// 		return nil, errors.New("protocol pass required")
-// 	}
-// 	if query == "" {
-// 		return nil, errors.New("query required")
-// 	}
-// 	// Implement the execution logic here
-// 	lexer := parser.NewLexer(query)
-// 	plan := parser.NewPlan(lexer, protoPass)
-// 	err := plan.Parse()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	evaluator := evaluator.NewEvaluator(plan, ctxKey, ctxValues)
-// 	err = evaluator.Eval()
-// 	printStatements(evaluator.Plan.Statements)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+//	if protoPass == "" {
+//		return nil, errors.New("protocol pass required")
+//	}
+//	if query == "" {
+//		return nil, errors.New("query required")
+//	}
+//	// Implement the execution logic here
+//	lexer := parser.NewLexer(query)
+//	plan := parser.NewPlan(lexer, protoPass)
+//	err := plan.Parse()
+//	if err != nil {
+//		return nil, err
+//	}
+//	evaluator := evaluator.NewEvaluator(plan, ctxKey, ctxValues)
+//	err = evaluator.Eval()
+//	printStatements(evaluator.Plan.Statements)
+//	if err != nil {
+//		return nil, err
+//	}
 
-// 	return evaluator.Result, nil
+//	return evaluator.Result, nil
 // }
 
 func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (res interface{}, err error) {
@@ -98,7 +98,6 @@ func ExecuteByOnqlAssembly(ev *evaluator.Evaluator) (res interface{}, err error)
 	// printStatements(ev.Plan.Statements)
 	return ev.Result, nil
 }
-
 
 func printStatements(stmts []*parser.Statement) {
 	fmt.Printf("%-8s %-8s %-30s %-20s\n", "Name", "Operation", "Sources", "Expressions")

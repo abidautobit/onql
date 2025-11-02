@@ -1,21 +1,20 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 )
 
 var AggrRegistry = map[string]map[string]string{
-	"_sum":    {"LIST": "NUMBER", "TABLE": "NUMBER"},
-	"_count":  {"LIST": "NUMBER", "TABLE": "NUMBER"},
-	"_avg":    {"LIST": "NUMBER"},
-	"_min":    {"LIST": "NUMBER"},
-	"_max":    {"LIST": "NUMBER"},
-	"_unique": {"LIST": "LIST", "TABLE": "TABLE"},
-	"_asc":    {"LIST": "LIST", "TABLE": "TABLE"},
-	"_desc":   {"LIST": "LIST", "TABLE": "TABLE"},
-	"_date":   {"LIST": "STRING", "FIELD": "STRING", "NUMBER": "STRING", "TABLE": "STRING"},
-	"_like":   {"FIELD": "NUMBER", "LIST": "NUMBER", "TABLE": "NUMBER"},
+	"_sum":    {"LIST": "NUMBER", "TABLE": "NUMBER", "JSON": "NUMBER"},
+	"_count":  {"LIST": "NUMBER", "TABLE": "NUMBER", "JSON": "NUMBER"},
+	"_avg":    {"LIST": "NUMBER", "JSON": "NUMBER"},
+	"_min":    {"LIST": "NUMBER", "JSON": "NUMBER"},
+	"_max":    {"LIST": "NUMBER", "JSON": "NUMBER"},
+	"_unique": {"LIST": "LIST", "TABLE": "TABLE", "JSON": "LIST"},
+	"_asc":    {"LIST": "LIST", "TABLE": "TABLE", "JSON": "LIST"},
+	"_desc":   {"LIST": "LIST", "TABLE": "TABLE", "JSON": "LIST"},
+	"_date":   {"LIST": "STRING", "FIELD": "STRING", "NUMBER": "STRING", "TABLE": "STRING", "JSON": "STRING"},
+	"_like":   {"FIELD": "NUMBER", "LIST": "NUMBER", "TABLE": "NUMBER", "JSON": "NUMBER"},
 }
 
 func (plan *Plan) ParseAggr(stmt *Statement, dependency string) error {
@@ -71,14 +70,38 @@ func (plan *Plan) GetAggrReturnType(aggrName, inputStmtName string) (string, err
 		inpType = "FIELD"
 	case OpAccessRow:
 		inpType = "ROW"
+	case OpAccessJsonProperty:
+		inpType = "JSON"
+	case OpUnknownIdentifier:
+		// Unknown identifiers cannot be aggregated
+		return "", fmt.Errorf(
+			"cannot apply aggregate function '%s' on unknown identifier. "+
+				"Ensure the property exists and is of a supported type (TABLE, LIST, FIELD, or JSON)",
+			aggrName,
+		)
 	case OpAggregateReduce:
 		inpType = inputStmt.Meta["return_type"]
 	}
 	returnType, ok := AggrRegistry[aggrName][inpType]
 	if !ok {
-		return "", errors.New("aggr return type not found")
+		return "", fmt.Errorf(
+			"aggregate function '%s' does not support input type '%s'. "+
+				"Supported types: %v",
+			aggrName, inpType, getAggrSupportedTypes(aggrName),
+		)
 	}
 	return returnType, nil
+}
+
+// getAggrSupportedTypes returns supported input types for an aggregate function
+func getAggrSupportedTypes(aggrName string) []string {
+	types := []string{}
+	if mapping, ok := AggrRegistry[aggrName]; ok {
+		for t := range mapping {
+			types = append(types, t)
+		}
+	}
+	return types
 }
 
 func (plan *Plan) GetOperationTypeFromAggrReturnType(returnType string) OperationType {
@@ -109,6 +132,10 @@ func (plan *Plan) GetAggrInputTypeFromOperationType(ot OperationType) string {
 		return "ROW"
 	case OpAccessList:
 		return "LIST"
+	case OpAccessJsonProperty:
+		return "JSON"
+	case OpUnknownIdentifier:
+		return "UNKNOWN"
 	}
 	return "unknown"
 }

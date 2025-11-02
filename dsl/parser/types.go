@@ -44,8 +44,8 @@ type Plan struct {
 	Parents      []*Statement
 	lexer        *Lexer
 	ProtocolPass string
+	Pos          int
 	// Context      string
-	Pos          int //current position of statement in parser
 }
 
 // OperationType defines the possible ONQL operation codes
@@ -60,11 +60,11 @@ const (
 	OpAccessRow          OperationType = "ATR" // Access Row
 	OpAccessField        OperationType = "ARF" // Access Field
 	OpAccessUnknownRow   OperationType = "AUR" // Access Unknown Row
-	// OpAccessJsonField    OperationType = "AJF" // Access JSON Field
+	OpAccessJsonProperty OperationType = "AJP" // Access JSON Property (dynamic property on JSON objects)
 	OpSlice              OperationType = "SLT" // Slice
 	OpAggregateReduce    OperationType = "AGR" // Aggregate
 	OpNormalOperation    OperationType = "NO"  // Normal Operation
-	OpUnknownIdentifier  OperationType = "UNI" // Unknown Identifier
+	OpUnknownIdentifier  OperationType = "UNI" // Unknown Identifier (non-JSON property access)
 	OpSliceUnknown       OperationType = "SLU" // Slice Unknown
 	OpStartFilter        OperationType = "SFT" // Start Filter
 	OpEndFilter          OperationType = "EFT" // End Filter
@@ -165,10 +165,9 @@ func (plan *Plan) GetAncestorTable(stmt *Statement) (*Statement, error) {
 	}
 }
 
-
 func (plan *Plan) GetPrevStatement() (*Statement, error) {
 	prevStmt := plan.Statements[len(plan.Statements)-1]
-	if prevStmt.Operation == OpAccessTable || prevStmt.Operation == OpAccessRelatedTable || prevStmt.Operation == OpStartFilter || prevStmt.Operation == OpEndFilter || prevStmt.Operation == OpSlice || prevStmt.Operation == OpStartProjectionKey || prevStmt.Operation == OpEndProjectionKey || prevStmt.Operation == OpAccessList || prevStmt.Operation == OpAccessRow || prevStmt.Operation == OpAccessField || prevStmt.Operation == OpUnknownIdentifier || prevStmt.Operation == OpAggregateReduce {
+	if prevStmt.Operation == OpAccessTable || prevStmt.Operation == OpAccessRelatedTable || prevStmt.Operation == OpStartFilter || prevStmt.Operation == OpEndFilter || prevStmt.Operation == OpSlice || prevStmt.Operation == OpStartProjectionKey || prevStmt.Operation == OpEndProjectionKey || prevStmt.Operation == OpAccessList || prevStmt.Operation == OpAccessRow || prevStmt.Operation == OpAccessField || prevStmt.Operation == OpAccessJsonProperty || prevStmt.Operation == OpUnknownIdentifier || prevStmt.Operation == OpAggregateReduce {
 		return prevStmt, nil
 	}
 	if len(plan.Parents) > 0 {
@@ -176,5 +175,3 @@ func (plan *Plan) GetPrevStatement() (*Statement, error) {
 	}
 	return nil, fmt.Errorf("no previous statement found")
 }
-
-

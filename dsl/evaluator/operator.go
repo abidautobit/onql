@@ -164,7 +164,7 @@ func (e *Evaluator) EvalComparisonOperator() error {
 		case "NUMBER", "TIMESTAMP":
 			op1Num = leftStmtData.(float64)
 		default:
-			if e.Plan.StatementMap[expression[0]].Operation == parser.OpUnknownIdentifier {
+			if e.Plan.StatementMap[expression[0]].Operation == parser.OpAccessJsonProperty || e.Plan.StatementMap[expression[0]].Operation == parser.OpUnknownIdentifier {
 				e.Memory[stmt.Name] = false
 				return nil
 			}
@@ -204,7 +204,7 @@ func (e *Evaluator) EvalComparisonOperator() error {
 				op2NumList = append(op2NumList, v)
 			}
 		default:
-			if e.Plan.StatementMap[expression[2]].Operation == parser.OpUnknownIdentifier {
+			if e.Plan.StatementMap[expression[2]].Operation == parser.OpAccessJsonProperty || e.Plan.StatementMap[expression[2]].Operation == parser.OpUnknownIdentifier {
 				e.Memory[stmt.Name] = false
 				return nil
 			}

@@ -71,8 +71,13 @@ func (e *Evaluator) EvalStatement() error {
 		if err := e.EvalAggr(); err != nil {
 			return err
 		}
+	case parser.OpAccessJsonProperty:
+		if err := e.EvalJsonProperty(); err != nil {
+			return err
+		}
 	case parser.OpUnknownIdentifier:
-		if err := e.EvalUnknown(); err != nil {
+		// Unknown identifier - not validated as JSON
+		if err := e.EvalUnknownIdentifier(); err != nil {
 			return err
 		}
 	default:
