@@ -1,6 +1,6 @@
+// Responsible for transfer data to appropriate programs
+// (server,extension,database) with appropriate channels.
 package router
-
-// responsible for transfer data to appropriate programs (server,extension,database) with appropriate channels
 
 func Route(msg *Message) {
 	switch msg.Type {
@@ -26,7 +26,6 @@ func handleRequest(msg *Message) {
 	case "subscribe":
 		handleStreamRequest(msg)
 	default:
-		// log.Printf("⚠️  unknown target %q in request: %v", msg.Target, msg)
 		handleExtensionMessage(msg)
 	}
 }
@@ -35,7 +34,6 @@ func handleResponse(msg *Message) {
 	switch msg.Target {
 	case "server":
 		handleServerResponse(msg)
-	// case "extension":
 	default:
 		handleExtensionMessage(msg)
 	}
