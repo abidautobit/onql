@@ -66,13 +66,13 @@ ONQL is a powerful Domain-Specific Language (DSL) that allows you to query your 
 
 ONQL operates on a set of intuitive, object-based data structures:
 
-| Type   | Description                                       | Example                     |
-| :----- | :------------------------------------------------ | :-------------------------- |
-| **Table**  | An array of objects.                              | `db.accounts`               |
-| **Row**    | A single object from a table.                     | `db.accounts[0]`            |
-| **List**   | A vertical array of values from a single column.  | `db.accounts.username`      |
-| **Field**  | A single value from a specific row and column.    | `db.accounts[0].username`   |
-| **Literal**| A static string or number.                        | `"harry"`, `1234`           |
+| Type        | Description                                      | Example                   |
+|:------------|:-------------------------------------------------|:--------------------------|
+| **Table**   | An array of objects.                             | `db.accounts`             |
+| **Row**     | A single object from a table.                    | `db.accounts[0]`          |
+| **List**    | A vertical array of values from a single column. | `db.accounts.username`    |
+| **Field**   | A single value from a specific row and column.   | `db.accounts[0].username` |
+| **Literal** | A static string or number.                       | `"harry"`, `1234`         |
 
 > **Note:** ONQL does not support boolean literals (`true`/`false`) directly in queries. Instead, use comparison expressions that evaluate to a boolean outcome.
 
@@ -80,12 +80,12 @@ ONQL operates on a set of intuitive, object-based data structures:
 
 ONQL supports a familiar set of operators for complex queries.
 
-| Category      | Operators                     |
-| :------------ | :---------------------------- |
-| **Arithmetic**  | `+`, `-`, `*`, `/`, `%`, `**`  |
-| **Comparison**  | `<`, `>`, `<=`, `>=`, `!=`, `in` |
-| **Logical**     | `and`, `or`, `not`            |
-| **Priority**    | `( )`                         |
+| Category       | Operators                        |
+|:---------------|:---------------------------------|
+| **Arithmetic** | `+`, `-`, `*`, `/`, `%`, `**`    |
+| **Comparison** | `<`, `>`, `<=`, `>=`, `!=`, `in` |
+| **Logical**    | `and`, `or`, `not`               |
+| **Priority**   | `( )`                            |
 
 ### Query Examples
 
@@ -159,16 +159,16 @@ db.accounts{name, orders[qty > 20]}
 
 ONQL provides simple, parenthesis-free aggregate functions.
 
-| Function | Description                               | Example                               |
-| :------- | :---------------------------------------- | :------------------------------------ |
-| `_sum`   | Calculates the sum of a list.             | `db.accounts.balance._sum`            |
-| `_max`   | Finds the maximum value in a list.        | `db.transactions.amount._max`         |
-| `_min`   | Finds the minimum value in a list.        | `db.transactions.amount._min`         |
-| `_asc`   | Sorts a table or list in ascending order.          | `db.accounts._asc(username)`               |
-| `_dsc`   | Sorts a table or list in descending order.         | `db.accounts._dsc(created_at)`               |
-| `_like`  | Filters a list with a SQL LIKE pattern.   | `db.accounts.name._like("sa%")`       |
-| `_date`  | Formats a timestamp.                      | `db.accounts.created_at._date("2006-01-02")` |
-| `_count` | Counts the items in a table or list.      | `db.accounts._count`                  |
+| Function | Description                                | Example                                      |
+|----------|--------------------------------------------|----------------------------------------------|
+| `_sum`   | Calculates the sum of a list.              | `db.accounts.balance._sum`                   |
+| `_max`   | Finds the maximum value in a list.         | `db.transactions.amount._max`                |
+| `_min`   | Finds the minimum value in a list.         | `db.transactions.amount._min`                |
+| `_asc`   | Sorts a table or list in ascending order.  | `db.accounts._asc(username)`                 |
+| `_dsc`   | Sorts a table or list in descending order. | `db.accounts._dsc(created_at)`               |
+| `_like`  | Filters a list with a SQL LIKE pattern.    | `db.accounts.name._like("sa%")`              |
+| `_date`  | Formats a timestamp.                       | `db.accounts.created_at._date("2006-01-02")` |
+| `_count` | Counts the items in a table or list.       | `db.accounts._count`                         |
 
 ### Nested Queries
 
@@ -221,14 +221,15 @@ Protocols are JSON files that define the relationships between tables and the co
 
 ONQL supports four types of relations:
 
-| Type | Name              | Description                                                                  |
-| :--- | :---------------- | :--------------------------------------------------------------------------- |
-| `oto`  | **One-to-One**    | Each record in one table is linked to one and only one record in another table. |
-| `otm`  | **One-to-Many**   | A single record in one table can be linked to multiple records in another.   |
-| `mto`  | **Many-to-One**   | Multiple records in one table can be linked to a single record in another.   |
-| `mtm`  | **Many-to-Many**  | Multiple records in one table can be linked to multiple records in another, often via a `through` table. |
+| Type  | Name             | Description                                                                                              |
+|:------|:-----------------|:---------------------------------------------------------------------------------------------------------|
+| `oto` | **One-to-One**   | Each record in one table is linked to one and only one record in another table.                          |
+| `otm` | **One-to-Many**  | A single record in one table can be linked to multiple records in another.                               |
+| `mto` | **Many-to-One**  | Multiple records in one table can be linked to a single record in another.                               |
+| `mtm` | **Many-to-Many** | Multiple records in one table can be linked to multiple records in another, often via a `through` table. |
 
 **Important Notes:**
+
 *   `entity` and `through` refer to the original table names from the schema.
 *   `prototable` is the alias for the table within the current protocol.
 *   ONQL queries must use the alias names defined in the protocol, not the original schema names.
