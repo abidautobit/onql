@@ -17,6 +17,7 @@ func Setup() {
 	if err != nil {
 		log.Fatal("Error starting TCP server:", err)
 	}
+
 	defer listener.Close()
 	log.Println("Server started on port", port)
 
@@ -26,34 +27,36 @@ func Setup() {
 			log.Println("Failed to accept connection:", err)
 			continue
 		}
-		go handleConnection(conn) // Spawn goroutine for each connection
+		go handleConnection(conn)
 	}
 }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
+
 	reader := bufio.NewReader(conn)
-	//for response
+	connUniqueId := uuid.NewString()
+
 	handleResponse := func(response string) {
 		response += "\x04" // Append end-of-message character
 		if _, err := conn.Write([]byte(response)); err != nil {
 			log.Println("Write failed:", err)
 		}
 	}
-	connUniqueId := uuid.NewString()
 
-	//start reading queries
 	for {
-		//this is uncommon character for end of message
-		// it is used to avoid conflicts with user input
+		// This is uncommon character for end of message
+		// it is used to avoid conflicts with user input.
 		message, err := reader.ReadString('\x04') // Read line-delimited messages
 		if err != nil {
 			log.Println("Connection closed:", err)
 			return
 		}
+
 		query := strings.TrimSuffix(message, "\x04")
 		log.Printf("Received: %s", query)
-		//pass query to router with responder function
+
+		// Pass query to router with responder function
 		go router.HandleServerRequest(query, connUniqueId, &handleResponse)
 	}
 }
