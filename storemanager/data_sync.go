@@ -12,13 +12,13 @@ import (
 type dbdata []byte
 
 var (
-	dataRamStorage      = make(map[string]dbdata) // map[dataKey]dbdata
+	dataRamStorage      = make(map[string]dbdata)
 	dataRamStorageMutex sync.Mutex
 	dataBufferLimit     = 500
 	dataFlushInterval   = 500 * time.Millisecond
 )
 
-// InitIndexSystem initializes background flushers for both insert and delete index buffers.
+// InitIndexSystem initializes background flusher for both insert and delete index buffers.
 func InitDataFlushSystem() {
 	go func() {
 		for {
@@ -26,12 +26,6 @@ func InitDataFlushSystem() {
 			flushDataRamStorageToDisk()
 		}
 	}()
-	// go func() {
-	// 	for {
-	// 		time.Sleep(deleteFlushInterval)
-	// 		flushIndexDeleteBuffer()
-	// 	}
-	// }()
 }
 
 // SaveData sets the value for a given dataKey, replacing any previous value
@@ -72,25 +66,18 @@ func flushDataRamStorageToDisk() {
 		db := parts[1]
 		table := parts[2]
 		pk := parts[3]
-		// Save to disk
 		diskStore, err := GetDiskStore(db + "/" + table + "/data/" + utils.GetIDPrefix(pk) + ".db")
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		// jsonBytes, err := json.Marshal(row)
-		// if err != nil {
-		// fmt.Println(err)
-		// continue
-		// }
+
 		fmt.Println("Flushing data to disk:", row)
 		err = diskStore.Set(dataKey, row)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		//save in cashe also if allow
-		// CasheDb.Set(dataKey, jsonBytes)
 
 		delete(dataRamStorage, dataKey) // Clear from RAM after saving
 	}

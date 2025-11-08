@@ -57,14 +57,17 @@ func InsertData(data Data) (string, error) {
 func UpdateData(data Data) error {
 
 	storeKey := "row:" + data.db + ":" + data.table + ":" + data.columns["id"].(string)
+
 	// Step 1: Get previous data for index update
 	prevRows, err := GetData(data.db, data.table, []string{data.columns["id"].(string)})
 	if err != nil {
 		return err
 	}
+
 	if len(prevRows) == 0 {
 		return fmt.Errorf("no existing data found for update")
 	}
+
 	prevData := Data{
 		db:       data.db,
 		table:    data.table,
@@ -73,33 +76,14 @@ func UpdateData(data Data) error {
 		datatype: data.datatype,
 	}
 
-	// for col, value := range data.columns {
-	// 	if data.storage[col] == "ram" {
-	// 		valBytes, err := json.Marshal(value)
-	// 		if err != nil {
-	// 			return fmt.Errorf("failed to marshal RAM value for column %s: %v", col, err)
-	// 		}
-	// 		if err := ramStore.Set(storeKey+":"+col, valBytes); err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// }
-
-	// update disk
-	// diskStore, err := GetDiskStore(data.db + "/" + data.table + "/data/" + utils.GetIDPrefix(data.columns["id"].(string)) + ".db")
-	// if err != nil {
-	// 	return err
-	// }
 	jsonBytes, err := json.Marshal(data.columns)
 	if err != nil {
 		return err
 	}
-	// if err := diskStore.Set(storeKey, jsonBytes); err != nil {
-	// 	return err
-	// }
+
 	SaveData(storeKey, jsonBytes)
 
-	// save index before returning
+	// Save index before returning
 	if err := SaveIndex(data, prevData); err != nil {
 		return err
 	}
@@ -107,8 +91,6 @@ func UpdateData(data Data) error {
 }
 
 func GetData(db, table string, pks []string) ([]map[string]interface{}, error) {
-	// storage := getStorageMap(db, table) // <-- no need to pass explicitly anymore
-
 	result := make([]map[string]interface{}, 0)
 	for _, pk := range pks {
 		storeKey := "row:" + db + ":" + table + ":" + pk
@@ -117,16 +99,11 @@ func GetData(db, table string, pks []string) ([]map[string]interface{}, error) {
 		// Fetch from disk
 		data, ok := GetDataFromRamSync(storeKey)
 		if ok {
-			// row = data
 			err := json.Unmarshal([]byte(data), &row)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			// raw, err := CasheDb.Get(storeKey)
-			// if !err {
-			// 	json.Unmarshal([]byte(raw), &row)
-			// } else {
 			diskStore, err := GetDiskStore(db + "/" + table + "/data/" + utils.GetIDPrefix(pk) + ".db")
 			if err == nil {
 				raw, err := diskStore.Get(storeKey)
@@ -134,7 +111,6 @@ func GetData(db, table string, pks []string) ([]map[string]interface{}, error) {
 					json.Unmarshal([]byte(raw), &row)
 				}
 			}
-			// }
 		}
 		result = append(result, row)
 	}
@@ -174,13 +150,16 @@ func DeleteData(db string, table string, pks []string) error {
 		if err := DeleteIndex(oldData); err != nil {
 			return err
 		}
+
 		// Delete from RAM
 		DeleteDataFromRamSync(storeKey)
+
 		// Step 3: Delete from disk
 		diskStore, err := GetDiskStore(db + "/" + table + "/data/" + utils.GetIDPrefix(pk) + ".db")
 		if err != nil {
 			return err
 		}
+
 		if err := diskStore.Delete(storeKey); err != nil {
 			return err
 		}
@@ -228,17 +207,12 @@ func GetAllPks(db, table string) ([]string, error) {
 	stores := getTableDataStores(db, table)
 	for _, store := range stores {
 		keys := getAllKeysFromStore(store, db, table)
-		// for _, key := range keys {
-		// 	parts := strings.Split(key, ":")
-		// 	if len(parts) == 4 {
 		pks = append(pks, keys...)
-		// 	}
-		// }
 	}
 	return pks, nil
 }
 
-// call by schema
+// Call by schema
 func alterData(da DataAlter) error {
 	// get all stores for the table
 	tableStores := getTableDataStores(da.db, da.table)
@@ -296,7 +270,7 @@ func alterData(da DataAlter) error {
 
 // used when table or db renamed not column
 func AlterDataKeys(db string, tables []string, new map[string]string) error {
-	//if tables empty mean db change other wise table change
+	// If tables empty mean db change other wise table change
 	if len(tables) == 0 {
 		// Change all tables in the database
 		tables, _ = GetTables(db)
