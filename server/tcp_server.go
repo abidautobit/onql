@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const endOfMessage = "\x04"
+
 func Setup() {
 	port := config.Env("SERVER_PORT")
 	listener, err := net.Listen("tcp", ":"+port)
@@ -38,22 +40,21 @@ func handleConnection(conn net.Conn) {
 	connUniqueId := uuid.NewString()
 
 	handleResponse := func(response string) {
-		response += "\x04" // Append end-of-message character
+		response += endOfMessage
 		if _, err := conn.Write([]byte(response)); err != nil {
 			log.Println("Write failed:", err)
 		}
 	}
 
 	for {
-		// This is uncommon character for end of message
-		// it is used to avoid conflicts with user input.
-		message, err := reader.ReadString('\x04') // Read line-delimited messages
+		// Read line-delimited messages
+		message, err := reader.ReadString(endOfMessage[0])
 		if err != nil {
 			log.Println("Connection closed:", err)
 			return
 		}
 
-		query := strings.TrimSuffix(message, "\x04")
+		query := strings.TrimSuffix(message, endOfMessage)
 		log.Printf("Received: %s", query)
 
 		// Pass query to router with responder function
