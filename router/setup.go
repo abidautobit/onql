@@ -9,9 +9,6 @@ import (
 	"onql/engine"
 )
 
-var Registries map[string]any
-var nats = engine.NatsClient{}
-
 type Message struct {
 	ID      string `json:"id"`      // who is sending (your keyword)
 	RID     string `json:"rid"`     // unique request ID
@@ -19,6 +16,9 @@ type Message struct {
 	Payload string `json:"payload"` // arbitrary JSON payload
 	Type    string `json:"type"`    // "request" or "response"
 }
+
+var Registries map[string]any
+var nats = engine.NatsClient{}
 
 func init() {
 	err := nats.Connect(config.Env("NATS_URL"), false)
