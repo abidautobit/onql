@@ -9,20 +9,22 @@ type Query struct {
 	Filters []Filter // Conditions to filter the results
 }
 
-//or nested filters
-// q := get.Query{
-// 	Db:      "mydb",
-// 	Table:   "mytable",
-// 	Columns: []string{"name", "age"},
-// 	Filters: []Filter{{Field: "age", Operator: ">", Value: 30}},
-// 	Filters: []Filter{
-// 		{Column: "age", Operator: ">", Operand2: 30},
-// 		{Column: "name", Operator: "=", SubFilter: []Filter{
-// 			{Column: "John", Operator: "=", Operand2: "john"},
-// 	},
-// }
-//return array of objects
-func EvaluateQuery(q Query) ([]map[string]interface{}, error) {
+// or nested filters
+//
+//	q := get.Query{
+//		Db:      "mydb",
+//		Table:   "mytable",
+//		Columns: []string{"name", "age"},
+//		Filters: []Filter{{Field: "age", Operator: ">", Value: 30}},
+//		Filters: []Filter{
+//			{Column: "age", Operator: ">", Operand2: 30},
+//			{Column: "name", Operator: "=", SubFilter: []Filter{
+//				{Column: "John", Operator: "=", Operand2: "john"},
+//		},
+//	}
+//
+// return array of objects
+func EvaluateQuery(q Query) ([]map[string]any, error) {
 	//filter primary keys
 	pks, err := GetPksFromFilters(q.Db, q.Table, q.Filters)
 	if err != nil {

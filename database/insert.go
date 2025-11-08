@@ -8,8 +8,8 @@ import (
 
 // Insert inserts a new record into the specified table.
 // example usage:
-// pk, err := database.Insert("mydb", "mytable", map[string]interface{}{"name": "John", "age": 30}) or nested map for complex types
-func Insert(db, table string, record map[string]interface{}) (string, error) {
+// pk, err := database.Insert("mydb", "mytable", map[string]any{"name": "John", "age": 30}) or nested map for complex types
+func Insert(db, table string, record map[string]any) (string, error) {
 	// is db exists
 	if !IsDatabaseExists(db) {
 		return "", errors.New("database does not exist")

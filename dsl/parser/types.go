@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type Expression interface{}
+type Expression any
 
 type Literal struct {
 	Value string

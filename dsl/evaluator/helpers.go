@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetTableData(db string, table string) ([]map[string]interface{}, error) {
+func GetTableData(db string, table string) ([]map[string]any, error) {
 	pks, err := get.GetAllPks(db, table)
 	if err != nil {
 		return nil, err
@@ -20,7 +20,7 @@ func GetTableData(db string, table string) ([]map[string]interface{}, error) {
 	return data, nil
 }
 
-// func GetTableWithDataWithFilters(db string, table string, filters []string) ([]map[string]interface{}, error) {
+// func GetTableWithDataWithFilters(db string, table string, filters []string) ([]map[string]any, error) {
 // 	// loop filters and get by col value and at last union of pks then get with pks
 // 	pks := make([]string, 0)
 // 	for i, filter := range filters {
@@ -53,7 +53,7 @@ func GetTableData(db string, table string) ([]map[string]interface{}, error) {
 // 	return data, nil
 // }
 
-func GetTableWithDataWithFilters(db, table string, filters []string) ([]map[string]interface{}, error) {
+func GetTableWithDataWithFilters(db, table string, filters []string) ([]map[string]any, error) {
 	if len(filters) == 0 {
 		return GetTableData(db, table)
 	}
@@ -108,7 +108,7 @@ func GetTableWithDataWithFilters(db, table string, filters []string) ([]map[stri
 
 	// After consuming all tokens, we should have exactly one PK set.
 	if len(stack) == 0 {
-		return []map[string]interface{}{}, nil
+		return []map[string]any{}, nil
 	}
 	if len(stack) > 1 {
 		return nil, fmt.Errorf("incomplete filter: leftover %d uncombined expressions (missing operator)", len(stack)-1)
@@ -116,12 +116,12 @@ func GetTableWithDataWithFilters(db, table string, filters []string) ([]map[stri
 
 	pks := dedupe(stack[0])
 	if len(pks) == 0 {
-		return []map[string]interface{}{}, nil
+		return []map[string]any{}, nil
 	}
 	return get.GetWithPKs(db, table, pks)
 }
 
-func GetRelatedTableData(db string, relation storemanager.Relation, value string) ([]map[string]interface{}, error) {
+func GetRelatedTableData(db string, relation storemanager.Relation, value string) ([]map[string]any, error) {
 	//two probelems pending first original col name table name and db name not alias second mtm through table thirds in oto and mto case send dict not array
 	if relation.Type == "mtm" {
 		return GetMTMRelatedTabledData(db, relation, value)
@@ -138,7 +138,7 @@ func GetRelatedTableData(db string, relation storemanager.Relation, value string
 	return data, nil
 }
 
-func GetMTMRelatedTabledData(db string, relation storemanager.Relation, value string) ([]map[string]interface{}, error) {
+func GetMTMRelatedTabledData(db string, relation storemanager.Relation, value string) ([]map[string]any, error) {
 	cols := strings.Split(relation.FKField, ":")
 	pks, err := get.GetPksFromIndex(db, relation.Through, cols[1]+":"+value)
 	if err != nil {
@@ -157,7 +157,7 @@ func GetMTMRelatedTabledData(db string, relation storemanager.Relation, value st
 	return GetTableDataWithColValues(db, relation.Entity, cols[3], values)
 }
 
-func GetTableDataWithColValues(db string, table string, col string, values []string) ([]map[string]interface{}, error) {
+func GetTableDataWithColValues(db string, table string, col string, values []string) ([]map[string]any, error) {
 	pksOuter := make([]string, 0)
 	for _, value := range values {
 		pks, err := get.GetPksFromIndex(db, table, col+":"+value)
@@ -173,7 +173,7 @@ func GetTableDataWithColValues(db string, table string, col string, values []str
 	return data, nil
 }
 
-// func (e *Evaluator) GetDataFromVar(varName string) (interface{}, error) {
+// func (e *Evaluator) GetDataFromVar(varName string) (any, error) {
 // 	value, ok := e.Memory[varName]
 // 	if !ok {
 // 		return nil, fmt.Errorf("variable not found: %s", varName)

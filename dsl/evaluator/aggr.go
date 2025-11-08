@@ -19,7 +19,7 @@ import (
 // 	"_distinct": {"LIST": "NUMBER"},
 // }
 
-var AggrRegistry = map[string]func(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error{
+var AggrRegistry = map[string]func(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error{
 	// "_sum":  _sum,
 	// "_asc":  _asc,
 	// "_desc": _desc,
@@ -58,7 +58,7 @@ func (e *Evaluator) EvalAggr() error {
 	return nil
 }
 
-func _sum(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _sum(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	total := 0.0
 
 	switch t := data.(type) {
@@ -66,7 +66,7 @@ func _sum(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		for _, v := range t {
 			total += v
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("_sum: missing column name")
 		}
@@ -76,7 +76,7 @@ func _sum(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				total += f
 			}
 		}
-	case []interface{}:
+	case []any:
 		// Handle JSON data from unknown identifiers
 		for _, item := range t {
 			if f, ok := asFloat64(item); ok {
@@ -93,11 +93,11 @@ func _sum(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 
 // _asc orders data ASC. For TABLE, it sorts by args left→right: if the first key ties,
 // it falls through to the next, like SQL ORDER BY col1, col2, ...
-func _asc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _asc(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	switch v := data.(type) {
 
 	// ---------- TABLE ----------
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("sort: missing sort key(s)")
 		}
@@ -167,7 +167,7 @@ func _asc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		return nil
 
 	// ---------- LIST (interface) - JSON data ----------
-	case []interface{}:
+	case []any:
 		sort.SliceStable(v, func(i, j int) bool {
 			vi, vj := v[i], v[j]
 
@@ -196,18 +196,18 @@ func _asc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 		return nil
 
 	default:
-		return fmt.Errorf("sort: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64/[]interface{}), got %T", data)
+		return fmt.Errorf("sort: expected TABLE ([]map[string]any) or LIST ([]string/[]float64/[]any), got %T", data)
 	}
 }
 
 // _sortDesc orders data in DESC order.
 // TABLE: sorts by args left→right (col1 DESC, then col2 DESC, ...).
-// LIST: sorts []float64, []string, or []interface{} in descending order.
-func _desc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+// LIST: sorts []float64, []string, or []any in descending order.
+func _desc(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	switch v := data.(type) {
 
 	// ---------- TABLE ----------
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("sortDesc: missing sort key(s)")
 		}
@@ -277,7 +277,7 @@ func _desc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 		return nil
 
 	// ---------- LIST (interface) - JSON data ----------
-	case []interface{}:
+	case []any:
 		sort.SliceStable(v, func(i, j int) bool {
 			vi, vj := v[i], v[j]
 
@@ -306,11 +306,11 @@ func _desc(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 		return nil
 
 	default:
-		return fmt.Errorf("sortDesc: expected TABLE ([]map[string]interface{}) or LIST ([]string/[]float64/[]interface{}), got %T", data)
+		return fmt.Errorf("sortDesc: expected TABLE ([]map[string]any) or LIST ([]string/[]float64/[]any), got %T", data)
 	}
 }
 
-func _count(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _count(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	var n int
 	switch v := data.(type) {
 	case []float64:
@@ -319,10 +319,10 @@ func _count(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Ev
 		n = len(v)
 	case []bool:
 		n = len(v)
-	case []map[string]interface{}:
+	case []map[string]any:
 		// supports count on table rows as well
 		n = len(v)
-	case []interface{}:
+	case []any:
 		// Handle JSON data from unknown identifiers
 		n = len(v)
 	default:
@@ -332,7 +332,7 @@ func _count(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Ev
 	return nil
 }
 
-func _avg(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _avg(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	sum := 0.0
 	cnt := 0.0
 	switch t := data.(type) {
@@ -341,7 +341,7 @@ func _avg(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 			sum += v
 			cnt++
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("_avg: missing column name")
 		}
@@ -352,7 +352,7 @@ func _avg(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				cnt++
 			}
 		}
-	case []interface{}:
+	case []any:
 		// Handle JSON data from unknown identifiers
 		for _, item := range t {
 			if f, ok := asFloat64(item); ok {
@@ -371,7 +371,7 @@ func _avg(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 	return nil
 }
 
-func _min(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _min(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	minSet := false
 	minVal := 0.0
 
@@ -383,7 +383,7 @@ func _min(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				minSet = true
 			}
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("_min: missing column name")
 		}
@@ -396,7 +396,7 @@ func _min(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				}
 			}
 		}
-	case []interface{}:
+	case []any:
 		// Handle JSON data from unknown identifiers
 		for _, item := range t {
 			if f, ok := asFloat64(item); ok {
@@ -417,7 +417,7 @@ func _min(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 	return nil
 }
 
-func _max(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _max(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	maxSet := false
 	maxVal := 0.0
 
@@ -429,7 +429,7 @@ func _max(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				maxSet = true
 			}
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("_max: missing column name")
 		}
@@ -442,7 +442,7 @@ func _max(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 				}
 			}
 		}
-	case []interface{}:
+	case []any:
 		// Handle JSON data from unknown identifiers
 		for _, item := range t {
 			if f, ok := asFloat64(item); ok {
@@ -463,7 +463,7 @@ func _max(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eval
 	return nil
 }
 
-func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _unique(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	switch t := data.(type) {
 
 	// ---------- LIST (strings) ----------
@@ -495,9 +495,9 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		return nil
 
 	// ---------- LIST (interface) - JSON data ----------
-	case []interface{}:
+	case []any:
 		seen := make(map[string]struct{}, len(t))
-		out := make([]interface{}, 0, len(t))
+		out := make([]any, 0, len(t))
 		for _, item := range t {
 			// Use string representation as key for deduplication
 			key := fmt.Sprint(item)
@@ -511,7 +511,7 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		return nil
 
 	// ---------- TABLE ----------
-	case []map[string]interface{}:
+	case []map[string]any:
 		if len(aggrObj.Args) == 0 {
 			return fmt.Errorf("_distinct: missing column name(s)")
 		}
@@ -524,7 +524,7 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		}
 
 		seen := make(map[string]struct{}, len(t))
-		out := make([]map[string]interface{}, 0, len(t))
+		out := make([]map[string]any, 0, len(t))
 
 		for _, r := range t {
 			key := makeCompositeKey(r, cols)
@@ -540,12 +540,12 @@ func _unique(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *E
 		return nil
 
 	default:
-		return fmt.Errorf("_distinct: expected LIST ([]string/[]float64/[]interface{}) or TABLE ([]map[string]interface{}), got %T", data)
+		return fmt.Errorf("_distinct: expected LIST ([]string/[]float64/[]any) or TABLE ([]map[string]any), got %T", data)
 	}
 }
 
 // helper: composite key builder for DISTINCT over multiple columns (left→right)
-func makeCompositeKey(row map[string]interface{}, cols []string) string {
+func makeCompositeKey(row map[string]any, cols []string) string {
 	var b strings.Builder
 	const sep = '\x1f' // unit separator
 	for i, c := range cols {
@@ -569,7 +569,7 @@ func makeCompositeKey(row map[string]interface{}, cols []string) string {
 	return b.String()
 }
 
-func _date(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _date(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	// Default layout; override via args.
 	// TABLE input: args[0]=column (required), args[1]=layout (optional)
 	// Others (LIST/NUMBER/FIELD): args[0]=layout (optional)
@@ -577,7 +577,7 @@ func _date(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 	var col string
 
 	switch data.(type) {
-	case []map[string]interface{}: // TABLE
+	case []map[string]any: // TABLE
 		if len(aggrObj.Args) == 0 || aggrObj.Args[0] == "" {
 			return fmt.Errorf("_date: table input requires column name as first arg")
 		}
@@ -650,7 +650,7 @@ func _date(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 			return fmt.Errorf("_date: first string not numeric: %q", t[0])
 		}
 
-	case []interface{}:
+	case []any:
 		for _, v := range t {
 			switch vv := v.(type) {
 			case float64:
@@ -679,11 +679,11 @@ func _date(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 			}
 		}
 		if !found {
-			return fmt.Errorf("_date: no convertible element in []interface{}")
+			return fmt.Errorf("_date: no convertible element in []any")
 		}
 
 	// ----- table shape -----
-	case []map[string]interface{}:
+	case []map[string]any:
 		for _, r := range t {
 			if v, ok := r[col]; ok {
 				switch vv := v.(type) {
@@ -726,7 +726,7 @@ func _date(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 	return nil
 }
 
-func _like(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Evaluator) error {
+func _like(stmt *parser.Statement, data any, aggrObj parser.Aggr, e *Evaluator) error {
 	if len(aggrObj.Args) == 0 {
 		return fmt.Errorf("_like: missing pattern argument")
 	}
@@ -766,7 +766,7 @@ func _like(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 				break
 			}
 		}
-	case []interface{}:
+	case []any:
 		for _, item := range values {
 			if s, ok := item.(string); ok {
 				if regexPattern.MatchString(s) {
@@ -775,7 +775,7 @@ func _like(stmt *parser.Statement, data interface{}, aggrObj parser.Aggr, e *Eva
 				}
 			}
 		}
-	case []map[string]interface{}: // This is a TABLE
+	case []map[string]any: // This is a TABLE
 		for _, row := range values {
 			if val, ok := row[columnName]; ok {
 				if s, ok := val.(string); ok {

@@ -24,7 +24,7 @@ func SaveIndex(data Data, prevData Data) error {
 	if len(prevData.columns) > 0 {
 		oldIndexes := GenIndex(prevData)
 		for _, oldIndex := range oldIndexes {
-			 AddToDeleteBuffer(oldIndex, pk)
+			AddToDeleteBuffer(oldIndex, pk)
 		}
 	}
 
@@ -32,7 +32,7 @@ func SaveIndex(data Data, prevData Data) error {
 	newIndexes := GenIndex(data)
 	for _, newIndex := range newIndexes {
 		// fmt.Println("Adding index:", newIndex, "for PK:", pk)
-		 AddToIndexBuffer(newIndex, pk)
+		AddToIndexBuffer(newIndex, pk)
 	}
 
 	return nil
@@ -47,14 +47,14 @@ func DeleteIndex(data Data) error {
 
 	indexKeys := GenIndex(data)
 	for _, indexKey := range indexKeys {
-		 AddToDeleteBuffer(indexKey, pk) // Use goroutine
+		AddToDeleteBuffer(indexKey, pk) // Use goroutine
 	}
 	return nil
 }
 
 // GenIndex generates unique index keys from data columns for fast lookups.
 //   - For non-JSON columns: "index:db:table:column:value"
-//   - For JSON columns (map[string]interface{}): recursively flattens keys and generates:
+//   - For JSON columns (map[string]any): recursively flattens keys and generates:
 //     "index:db:table:column:nestedKey:nestedKey2:value"
 //   - Avoids duplicate index entries.
 func GenIndex(data Data) []string {
@@ -62,10 +62,10 @@ func GenIndex(data Data) []string {
 	seen := make(map[string]bool)
 
 	// Recursive helper to handle nested JSON structures
-	var collect func(baseKey, nestedKey string, val interface{})
-	collect = func(baseKey, nestedKey string, val interface{}) {
+	var collect func(baseKey, nestedKey string, val any)
+	collect = func(baseKey, nestedKey string, val any) {
 		switch v := val.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			// Recursively flatten JSON keys
 			for k, subv := range v {
 				newKey := k
@@ -264,7 +264,7 @@ func RefereshIndex() error {
 }
 
 // use parallel for view all index files oriented to column
-func FilterPksByIndex(db, table, column, op, valType string, value interface{}) []string {
+func FilterPksByIndex(db, table, column, op, valType string, value any) []string {
 	prefix := fmt.Sprintf("index:%s:%s:%s:", db, table, column)
 	valueStr := utils.ToString(value)
 

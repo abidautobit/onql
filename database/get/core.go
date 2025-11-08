@@ -8,7 +8,7 @@ import (
 )
 
 // get with pks
-func GetWithPKs(db, table string, pks []string) ([]map[string]interface{}, error) {
+func GetWithPKs(db, table string, pks []string) ([]map[string]any, error) {
 	// Check if database exists
 	if !database.IsDatabaseExists(db) {
 		return nil, errors.New("database does not exist")
@@ -40,7 +40,7 @@ func GetPksFromIndex(db, table, index string) ([]string, error) {
 }
 
 // for fast access only to ram data
-// func GetRamData(db, table string, pks []string) ([]map[string]interface{}, error) {
+// func GetRamData(db, table string, pks []string) ([]map[string]any, error) {
 // 	if !database.IsDatabaseExists(db) {
 // 		return nil, errors.New("database does not exist")
 // 	}
@@ -50,7 +50,7 @@ func GetPksFromIndex(db, table, index string) ([]string, error) {
 
 // 	// schema := database.FullSchemaStorages[db][table] // <-- Use pre-flattened storage schema
 
-// 	var results []map[string]interface{}
+// 	var results []map[string]any
 // 	for _, pk := range pks {
 // 		row, err := storemanager.GetRamData(db, table, pk, []string{})
 // 		if err != nil {

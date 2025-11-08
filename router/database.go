@@ -16,7 +16,7 @@ type DatabaseRequest struct {
 
 // CallDatabaseFuncDirect provides direct function calls without reflection for better performance.
 // This eliminates the overhead of reflection by mapping function names to direct function calls.
-func CallDatabaseFuncDirect(name string, args []json.RawMessage) (interface{}, error) {
+func CallDatabaseFuncDirect(name string, args []json.RawMessage) (any, error) {
 	switch name {
 	// --- Schema Functions ---
 	case "GetDatabases":
@@ -202,7 +202,7 @@ func CallDatabaseFuncDirect(name string, args []json.RawMessage) (interface{}, e
 			return nil, fmt.Errorf("insert expects 3 args, got %d", len(args))
 		}
 		var db, table string
-		var record map[string]interface{}
+		var record map[string]any
 		if err := json.Unmarshal(args[0], &db); err != nil {
 			return nil, fmt.Errorf("invalid db arg: %w", err)
 		}
@@ -219,7 +219,7 @@ func CallDatabaseFuncDirect(name string, args []json.RawMessage) (interface{}, e
 			return nil, fmt.Errorf("update expects 3 args, got %d", len(args))
 		}
 		var db, table string
-		var record map[string]interface{}
+		var record map[string]any
 		if err := json.Unmarshal(args[0], &db); err != nil {
 			return nil, fmt.Errorf("invalid db arg: %w", err)
 		}
@@ -236,7 +236,7 @@ func CallDatabaseFuncDirect(name string, args []json.RawMessage) (interface{}, e
 			return nil, fmt.Errorf("UpdatePartial expects 3 args, got %d", len(args))
 		}
 		var db, table string
-		var record map[string]interface{}
+		var record map[string]any
 		if err := json.Unmarshal(args[0], &db); err != nil {
 			return nil, fmt.Errorf("invalid db arg: %w", err)
 		}

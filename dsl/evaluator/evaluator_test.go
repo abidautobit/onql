@@ -106,13 +106,13 @@ func TestNewEvaluator(t *testing.T) {
 // TestSetMemoryValue tests the memory value setter with type narrowing
 func TestSetMemoryValue(t *testing.T) {
 	ev := &Evaluator{
-		Memory: make(map[string]interface{}),
+		Memory: make(map[string]any),
 	}
 
 	tests := []struct {
 		name         string
 		key          string
-		value        interface{}
+		value        any
 		expectedType string
 	}{
 		{
@@ -160,13 +160,13 @@ func TestSetMemoryValue(t *testing.T) {
 		{
 			name:         "row object",
 			key:          "test_row",
-			value:        map[string]interface{}{"id": float64(1), "name": "test"},
+			value:        map[string]any{"id": float64(1), "name": "test"},
 			expectedType: "ROW",
 		},
 		{
 			name: "table array",
 			key:  "test_table",
-			value: []map[string]interface{}{
+			value: []map[string]any{
 				{"id": float64(1), "name": "first"},
 				{"id": float64(2), "name": "second"},
 			},
@@ -175,7 +175,7 @@ func TestSetMemoryValue(t *testing.T) {
 		{
 			name:         "mixed array",
 			key:          "test_mixed",
-			value:        []interface{}{"string", float64(1), true},
+			value:        []any{"string", float64(1), true},
 			expectedType: "ARRAY_OF_UNKNOWN",
 		},
 	}
@@ -215,67 +215,67 @@ func TestSetMemoryValue(t *testing.T) {
 func TestNarrowTypes(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    interface{}
-		checkFn  func(interface{}) bool
+		input    any
+		checkFn  func(any) bool
 		typeDesc string
 	}{
 		{
-			name:  "narrow []interface{} of strings to []string",
-			input: []interface{}{"a", "b", "c"},
-			checkFn: func(v interface{}) bool {
+			name:  "narrow []any of strings to []string",
+			input: []any{"a", "b", "c"},
+			checkFn: func(v any) bool {
 				_, ok := v.([]string)
 				return ok
 			},
 			typeDesc: "[]string",
 		},
 		{
-			name:  "narrow []interface{} of numbers to []float64",
-			input: []interface{}{float64(1), float64(2), float64(3)},
-			checkFn: func(v interface{}) bool {
+			name:  "narrow []any of numbers to []float64",
+			input: []any{float64(1), float64(2), float64(3)},
+			checkFn: func(v any) bool {
 				_, ok := v.([]float64)
 				return ok
 			},
 			typeDesc: "[]float64",
 		},
 		{
-			name:  "narrow []interface{} of bools to []bool",
-			input: []interface{}{true, false, true},
-			checkFn: func(v interface{}) bool {
+			name:  "narrow []any of bools to []bool",
+			input: []any{true, false, true},
+			checkFn: func(v any) bool {
 				_, ok := v.([]bool)
 				return ok
 			},
 			typeDesc: "[]bool",
 		},
 		{
-			name: "narrow []interface{} of maps to []map[string]interface{}",
-			input: []interface{}{
-				map[string]interface{}{"id": float64(1)},
-				map[string]interface{}{"id": float64(2)},
+			name: "narrow []any of maps to []map[string]any",
+			input: []any{
+				map[string]any{"id": float64(1)},
+				map[string]any{"id": float64(2)},
 			},
-			checkFn: func(v interface{}) bool {
-				_, ok := v.([]map[string]interface{})
+			checkFn: func(v any) bool {
+				_, ok := v.([]map[string]any)
 				return ok
 			},
-			typeDesc: "[]map[string]interface{}",
+			typeDesc: "[]map[string]any",
 		},
 		{
-			name:  "preserve mixed []interface{}",
-			input: []interface{}{"string", float64(1), true},
-			checkFn: func(v interface{}) bool {
-				_, ok := v.([]interface{})
+			name:  "preserve mixed []any",
+			input: []any{"string", float64(1), true},
+			checkFn: func(v any) bool {
+				_, ok := v.([]any)
 				return ok
 			},
-			typeDesc: "[]interface{}",
+			typeDesc: "[]any",
 		},
 		{
 			name:  "narrow nested maps",
-			input: map[string]interface{}{"nested": map[string]interface{}{"value": float64(1)}},
-			checkFn: func(v interface{}) bool {
-				m, ok := v.(map[string]interface{})
+			input: map[string]any{"nested": map[string]any{"value": float64(1)}},
+			checkFn: func(v any) bool {
+				m, ok := v.(map[string]any)
 				if !ok {
 					return false
 				}
-				nested, ok := m["nested"].(map[string]interface{})
+				nested, ok := m["nested"].(map[string]any)
 				if !ok {
 					return false
 				}
@@ -287,7 +287,7 @@ func TestNarrowTypes(t *testing.T) {
 		{
 			name:  "convert int to float64",
 			input: int(42),
-			checkFn: func(v interface{}) bool {
+			checkFn: func(v any) bool {
 				f, ok := v.(float64)
 				return ok && f == 42.0
 			},
@@ -311,7 +311,7 @@ func TestNarrowTypes(t *testing.T) {
 func TestGetStructureType(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected string
 	}{
 		{"null", nil, "NULL"},
@@ -322,12 +322,12 @@ func TestGetStructureType(t *testing.T) {
 		{"int32", int32(42), "NUMBER"},
 		{"int64", int64(42), "NUMBER"},
 		{"uint", uint(42), "NUMBER"},
-		{"row", map[string]interface{}{"id": 1}, "ROW"},
-		{"table", []map[string]interface{}{{"id": 1}}, "TABLE"},
+		{"row", map[string]any{"id": 1}, "ROW"},
+		{"table", []map[string]any{{"id": 1}}, "TABLE"},
 		{"array_string", []string{"a", "b"}, "ARRAY_OF_STRING"},
 		{"array_number", []float64{1.0, 2.0}, "ARRAY_OF_NUMBER"},
 		{"array_bool", []bool{true, false}, "ARRAY_OF_BOOL"},
-		{"array_unknown", []interface{}{1, "a"}, "ARRAY_OF_UNKNOWN"},
+		{"array_unknown", []any{1, "a"}, "ARRAY_OF_UNKNOWN"},
 	}
 
 	for _, tt := range tests {
@@ -346,7 +346,7 @@ func TestTypeConversionHelpers(t *testing.T) {
 	t.Run("asFloat64", func(t *testing.T) {
 		tests := []struct {
 			name     string
-			input    interface{}
+			input    any
 			expected float64
 			shouldOk bool
 		}{
@@ -375,53 +375,53 @@ func TestTypeConversionHelpers(t *testing.T) {
 	})
 
 	t.Run("allString", func(t *testing.T) {
-		if !allString([]interface{}{"a", "b", "c"}) {
+		if !allString([]any{"a", "b", "c"}) {
 			t.Error("allString should return true for string slice")
 		}
-		if allString([]interface{}{"a", float64(1)}) {
+		if allString([]any{"a", float64(1)}) {
 			t.Error("allString should return false for mixed slice")
 		}
-		if !allString([]interface{}{}) {
+		if !allString([]any{}) {
 			t.Error("allString should return true for empty slice")
 		}
 	})
 
 	t.Run("allNumber", func(t *testing.T) {
-		if !allNumber([]interface{}{float64(1), float64(2), float64(3)}) {
+		if !allNumber([]any{float64(1), float64(2), float64(3)}) {
 			t.Error("allNumber should return true for number slice")
 		}
-		if allNumber([]interface{}{float64(1), "string"}) {
+		if allNumber([]any{float64(1), "string"}) {
 			t.Error("allNumber should return false for mixed slice")
 		}
-		if !allNumber([]interface{}{}) {
+		if !allNumber([]any{}) {
 			t.Error("allNumber should return true for empty slice")
 		}
 	})
 
 	t.Run("allBool", func(t *testing.T) {
-		if !allBool([]interface{}{true, false, true}) {
+		if !allBool([]any{true, false, true}) {
 			t.Error("allBool should return true for bool slice")
 		}
-		if allBool([]interface{}{true, "string"}) {
+		if allBool([]any{true, "string"}) {
 			t.Error("allBool should return false for mixed slice")
 		}
-		if !allBool([]interface{}{}) {
+		if !allBool([]any{}) {
 			t.Error("allBool should return true for empty slice")
 		}
 	})
 
 	t.Run("allMap", func(t *testing.T) {
-		maps := []interface{}{
-			map[string]interface{}{"id": 1},
-			map[string]interface{}{"id": 2},
+		maps := []any{
+			map[string]any{"id": 1},
+			map[string]any{"id": 2},
 		}
 		if !allMap(maps) {
 			t.Error("allMap should return true for map slice")
 		}
-		if allMap([]interface{}{map[string]interface{}{}, "string"}) {
+		if allMap([]any{map[string]any{}, "string"}) {
 			t.Error("allMap should return false for mixed slice")
 		}
-		if !allMap([]interface{}{}) {
+		if !allMap([]any{}) {
 			t.Error("allMap should return true for empty slice")
 		}
 	})
@@ -430,17 +430,17 @@ func TestTypeConversionHelpers(t *testing.T) {
 // TestEvaluatorMemoryOperations tests memory get/set operations
 func TestEvaluatorMemoryOperations(t *testing.T) {
 	ev := &Evaluator{
-		Memory: make(map[string]interface{}),
+		Memory: make(map[string]any),
 	}
 
 	// Test setting multiple values
-	testData := map[string]interface{}{
-		"user":    map[string]interface{}{"id": float64(1), "name": "Alice"},
+	testData := map[string]any{
+		"user":    map[string]any{"id": float64(1), "name": "Alice"},
 		"count":   float64(42),
 		"active":  true,
 		"tags":    []string{"tag1", "tag2"},
 		"scores":  []float64{98.5, 87.3, 92.1},
-		"records": []map[string]interface{}{{"id": float64(1)}, {"id": float64(2)}},
+		"records": []map[string]any{{"id": float64(1)}, {"id": float64(2)}},
 	}
 
 	for key, value := range testData {
@@ -467,17 +467,17 @@ func TestEvaluatorMemoryOperations(t *testing.T) {
 // BenchmarkSetMemoryValue benchmarks the SetMemoryValue operation
 func BenchmarkSetMemoryValue(b *testing.B) {
 	ev := &Evaluator{
-		Memory: make(map[string]interface{}),
+		Memory: make(map[string]any),
 	}
 
-	testValues := []interface{}{
+	testValues := []any{
 		"string value",
 		float64(42),
 		true,
 		[]string{"a", "b", "c"},
 		[]float64{1.0, 2.0, 3.0},
-		map[string]interface{}{"id": float64(1), "name": "test"},
-		[]map[string]interface{}{{"id": float64(1)}, {"id": float64(2)}},
+		map[string]any{"id": float64(1), "name": "test"},
+		[]map[string]any{{"id": float64(1)}, {"id": float64(2)}},
 	}
 
 	b.ResetTimer()
@@ -491,14 +491,14 @@ func BenchmarkSetMemoryValue(b *testing.B) {
 func BenchmarkNarrowTypes(b *testing.B) {
 	testCases := []struct {
 		name  string
-		value interface{}
+		value any
 	}{
-		{"strings", []interface{}{"a", "b", "c", "d", "e"}},
-		{"numbers", []interface{}{float64(1), float64(2), float64(3), float64(4), float64(5)}},
-		{"mixed", []interface{}{"string", float64(1), true, nil}},
-		{"nested_map", map[string]interface{}{
-			"level1": map[string]interface{}{
-				"level2": map[string]interface{}{
+		{"strings", []any{"a", "b", "c", "d", "e"}},
+		{"numbers", []any{float64(1), float64(2), float64(3), float64(4), float64(5)}},
+		{"mixed", []any{"string", float64(1), true, nil}},
+		{"nested_map", map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
 					"value": float64(42),
 				},
 			},

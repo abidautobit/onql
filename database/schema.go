@@ -150,7 +150,7 @@ func CreateTable(db, table string, schema map[string]map[string]string) error {
 		}
 
 		if colSchema["default"] != "" {
-			var val interface{} = colSchema["default"]
+			var val any = colSchema["default"]
 			if colSchema["type"] == "number" {
 				var err error
 				val, err = strconv.ParseFloat(colSchema["default"], 64)

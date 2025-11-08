@@ -9,7 +9,7 @@ import (
 	"onql/engine"
 )
 
-var Registries map[string]interface{}
+var Registries map[string]any
 var nats = engine.NatsClient{}
 
 type Message struct {
@@ -28,7 +28,7 @@ func init() {
 	}
 
 	registryPath := config.Env("EXTENSION_REGISTRY")
-	Registries = make(map[string]interface{})
+	Registries = make(map[string]any)
 
 	data, err := os.ReadFile(registryPath)
 	if err != nil {

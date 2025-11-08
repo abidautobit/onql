@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (interface{}, error) {
+// func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (any, error) {
 
 //	if protoPass == "" {
 //		return nil, errors.New("protocol pass required")
@@ -34,7 +34,7 @@ import (
 //	return evaluator.Result, nil
 // }
 
-func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (res interface{}, err error) {
+func Execute(protoPass string, query string, ctxKey string, ctxValues []string) (res any, err error) {
 	// Catch ANY panic in this goroutine and return it as an error
 	defer func() {
 		if r := recover(); r != nil {
@@ -74,7 +74,7 @@ func Execute(protoPass string, query string, ctxKey string, ctxValues []string) 
 	return ev.Result, nil
 }
 
-func ExecuteByOnqlAssembly(ev *evaluator.Evaluator) (res interface{}, err error) {
+func ExecuteByOnqlAssembly(ev *evaluator.Evaluator) (res any, err error) {
 	// Catch ANY panic in this goroutine and return it as an error
 	defer func() {
 		if r := recover(); r != nil {

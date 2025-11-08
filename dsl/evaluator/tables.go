@@ -139,12 +139,12 @@ func (e *Evaluator) EvalTableWithContext() error {
 		return e.EvalTable()
 	}
 	for i, v := range e.ContextValues {
-			replacement := v
-			if !(strings.HasPrefix(v, "\"") && strings.HasSuffix(v, "\"")) {
-				replacement = "\"" + v + "\""
-			}
-			cntxQuery = strings.Replace(cntxQuery, "$"+strconv.Itoa(i+1), replacement, 1)
+		replacement := v
+		if !(strings.HasPrefix(v, "\"") && strings.HasSuffix(v, "\"")) {
+			replacement = "\"" + v + "\""
 		}
+		cntxQuery = strings.Replace(cntxQuery, "$"+strconv.Itoa(i+1), replacement, 1)
+	}
 	lexer := parser.NewLexer(cntxQuery)
 	plan := parser.NewPlan(lexer, e.Plan.ProtocolPass)
 	err = plan.Parse()
@@ -171,7 +171,7 @@ func (e *Evaluator) EvalTable() error {
 	// if next statement is start filteration and have
 	pos := e.Plan.Pos
 	filters := e.GenFilters()
-	var data []map[string]interface{}
+	var data []map[string]any
 	var err error
 	if filters != nil {
 		data, err = GetTableWithDataWithFilters(stmt.Meta["db"], stmt.Meta["table"], filters)
@@ -198,9 +198,9 @@ func (e *Evaluator) EvalRelatedTable() error {
 	}
 
 	fkKey := strings.Split(stmt.Expressions.(*storemanager.Relation).FKField, ":")[0]
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 	if e.isUnderFilter(stmt.Name) || e.IsUnderProjection(stmt.Name) {
-		val, ok := e.Memory[stmt.Sources[1].SourceValue].(map[string]interface{})
+		val, ok := e.Memory[stmt.Sources[1].SourceValue].(map[string]any)
 		if !ok {
 			return fmt.Errorf("host table data not found for getting related table data")
 		}
@@ -210,7 +210,7 @@ func (e *Evaluator) EvalRelatedTable() error {
 		}
 		result = append(result, data...)
 	} else {
-		tabledata, ok := e.Memory[stmt.Sources[1].SourceValue].([]map[string]interface{})
+		tabledata, ok := e.Memory[stmt.Sources[1].SourceValue].([]map[string]any)
 		if !ok {
 			return fmt.Errorf("host table data not found for getting related table data")
 		}
@@ -241,9 +241,9 @@ func (e *Evaluator) EvalTableList() error {
 	sourceName := stmt.Sources[0].SourceValue
 	list := make([]string, 0)
 	listNum := make([]float64, 0)
-	listOther := make([]interface{}, 0)
+	listOther := make([]any, 0)
 	stmtMetadataType := strings.ToUpper(stmt.Meta["type"])
-	for _, item := range e.Memory[sourceName].([]map[string]interface{}) {
+	for _, item := range e.Memory[sourceName].([]map[string]any) {
 		if val, ok := item[stmt.Meta["name"]]; ok {
 			if stmtMetadataType == "NUMBER" || stmtMetadataType == "TIMESTAMP" {
 				// num, err := strconv.ParseFloat(val.(string), 64)
@@ -280,19 +280,19 @@ func (e *Evaluator) EvalTableRow() error {
 		return errors.New("expected access table row operation")
 	}
 	sourceName := stmt.Sources[0].SourceValue
-	// row := make(map[string]interface{})
+	// row := make(map[string]any)
 	// if e.Plan.StatementMap[stmt.Expressions.(string)].Operation == parser.OpUnknownIdentifier {
 
 	// } else {
 
 	// }
 	switch e.Memory[sourceName].(type) {
-	case []map[string]interface{}:
-		row2 := e.Memory[sourceName].([]map[string]interface{})[stmt.Expressions.(int64)]
+	case []map[string]any:
+		row2 := e.Memory[sourceName].([]map[string]any)[stmt.Expressions.(int64)]
 		// e.Memory[stmt.Name] = row2
 		e.SetMemoryValue(stmt.Name, row2)
-	case []interface{}:
-		row2 := e.Memory[sourceName].([]interface{})[stmt.Expressions.(int64)]
+	case []any:
+		row2 := e.Memory[sourceName].([]any)[stmt.Expressions.(int64)]
 		e.SetMemoryValue(stmt.Name, row2)
 	case []string:
 		e.SetMemoryValue(stmt.Name, e.Memory[sourceName].([]string)[stmt.Expressions.(int64)])
@@ -314,7 +314,7 @@ func (e *Evaluator) EvalTableField() error {
 	}
 	sourceName := stmt.Sources[0].SourceValue
 
-	field := e.Memory[sourceName].(map[string]interface{})[stmt.Meta["name"]]
+	field := e.Memory[sourceName].(map[string]any)[stmt.Meta["name"]]
 	// e.Memory[stmt.Name] = field
 	// e.Memory[stmt.Name+"_meta_type"] = stmt.Meta["type"]
 	e.SetMemoryValue(stmt.Name, field)

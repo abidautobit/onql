@@ -187,7 +187,7 @@ func SetupEvaluator(protopass, query string, ctxkey string, ctxvalues []string) 
 	return ev, nil
 }
 
-func Stream(data interface{}, conns map[string]bool) {
+func Stream(data any, conns map[string]bool) {
 
 	payload, _ := json.Marshal(data)
 	// stream here

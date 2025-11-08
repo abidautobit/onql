@@ -14,7 +14,7 @@ func Contains(arr []string, s string) bool {
 	return false
 }
 
-func ToString(val interface{}) string {
+func ToString(val any) string {
 	switch v := val.(type) {
 	case string:
 		return v

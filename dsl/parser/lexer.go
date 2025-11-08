@@ -158,7 +158,7 @@
 // func init() {
 // 	for _, rule := range TokenRules {
 // 		rule := rule // shadow loop var
-// 		LexMach.Add([]byte(rule.Regex), func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
+// 		LexMach.Add([]byte(rule.Regex), func(s *lexmachine.Scanner, m *machines.Match) (any, error) {
 // 			if rule.Type == TOKEN_WHITESPACE {
 // 				return nil, nil // skip whitespace
 // 			}
@@ -396,7 +396,7 @@ type Lexer struct {
 func init() {
 	for _, rule := range TokenRules {
 		rule := rule // capture loop var
-		LexMach.Add([]byte(rule.Regex), func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
+		LexMach.Add([]byte(rule.Regex), func(s *lexmachine.Scanner, m *machines.Match) (any, error) {
 			// Skip ignored tokens
 			if rule.Type == TOKEN_WHITESPACE {
 				return nil, nil

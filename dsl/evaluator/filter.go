@@ -14,7 +14,7 @@ func (e *Evaluator) EvalFilter() error {
 	if filterStmt.Operation != parser.OpStartFilter {
 		return errors.New("expected start filter operation")
 	}
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 	// stmt := e.Plan.NextStatement(true)
 	pos := e.Plan.Pos
 	var endFilterPos int
@@ -23,7 +23,7 @@ func (e *Evaluator) EvalFilter() error {
 	// fmt.Println(e.Memory)
 	// fmt.Println(filterStmt.Sources[0].SourceValue)
 	//get data from start filter table
-	tableData, ok := e.Memory[filterStmt.Sources[0].SourceValue].([]map[string]interface{})
+	tableData, ok := e.Memory[filterStmt.Sources[0].SourceValue].([]map[string]any)
 	if !ok {
 		return errors.New("expect table data for filter but got " + fmt.Sprintf("%T", e.Memory[filterStmt.Sources[0].SourceValue]))
 	}
@@ -112,30 +112,30 @@ func (e *Evaluator) EvalSlice() error {
 	sliceParts := strings.Split(stmt.Expressions.(string), ":")
 	data := e.Memory[stmt.Sources[0].SourceValue]
 
-	var arr []interface{}
+	var arr []any
 
 	switch s := data.(type) {
-	case []map[string]interface{}:
-		arr = make([]interface{}, len(s))
+	case []map[string]any:
+		arr = make([]any, len(s))
 		for i, v := range s {
 			arr[i] = v
 		}
 	case []string:
-		arr = make([]interface{}, len(s))
+		arr = make([]any, len(s))
 		for i, v := range s {
 			arr[i] = v
 		}
 	case []float64:
-		arr = make([]interface{}, len(s))
+		arr = make([]any, len(s))
 		for i, v := range s {
 			arr[i] = v
 		}
 	case []int64:
-		arr = make([]interface{}, len(s))
+		arr = make([]any, len(s))
 		for i, v := range s {
 			arr[i] = v // or float64(v)
 		}
-	case []interface{}:
+	case []any:
 		arr = s
 	default:
 		return errors.New("expected array for row access for table row access")
@@ -191,12 +191,12 @@ func (e *Evaluator) EvalSlice() error {
 		return errors.ErrUnsupported
 	}
 	// Build the sliced result
-	result := make([]interface{}, 0)
+	result := make([]any, 0)
 	for i := start; i < end; i += step {
 		result = append(result, arr[i])
 	}
 
-	// result2,ok := result.([]map[string]interface{})
+	// result2,ok := result.([]map[string]any)
 
 	// e.Memory[stmt.Name] = result
 	e.SetMemoryValue(stmt.Name, result)

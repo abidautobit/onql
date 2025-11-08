@@ -9,7 +9,7 @@ import (
 type Data struct {
 	db       string
 	table    string
-	columns  map[string]interface{}
+	columns  map[string]any
 	storage  map[string]string // storage type: "disk" or "ram"
 	datatype map[string]string // column data types
 }
@@ -25,7 +25,7 @@ type DataAlter struct {
 }
 
 // NewData creates a new Data instance with all fields set.
-func NewData(db, table string, columns map[string]interface{}, storage, datatype map[string]string) Data {
+func NewData(db, table string, columns map[string]any, storage, datatype map[string]string) Data {
 	return Data{
 		db:       db,
 		table:    table,
@@ -90,11 +90,11 @@ func UpdateData(data Data) error {
 	return nil
 }
 
-func GetData(db, table string, pks []string) ([]map[string]interface{}, error) {
-	result := make([]map[string]interface{}, 0)
+func GetData(db, table string, pks []string) ([]map[string]any, error) {
+	result := make([]map[string]any, 0)
 	for _, pk := range pks {
 		storeKey := "row:" + db + ":" + table + ":" + pk
-		row := make(map[string]interface{})
+		row := make(map[string]any)
 
 		// Fetch from disk
 		data, ok := GetDataFromRamSync(storeKey)
@@ -168,24 +168,24 @@ func DeleteData(db string, table string, pks []string) error {
 	return nil
 }
 
-func GetSpecificData(db, table string, pks, columns []string) ([]map[string]interface{}, error) {
+func GetSpecificData(db, table string, pks, columns []string) ([]map[string]any, error) {
 	schema := getStorageMap(db, table)
-	var result []map[string]interface{}
+	var result []map[string]any
 	for _, pk := range pks {
 		storeKey := "row:" + db + ":" + table + ":" + pk
-		row := make(map[string]interface{})
+		row := make(map[string]any)
 		// Fetch from disk
 		diskStore, err := GetDiskStore(db + "/" + table + "/data/" + utils.GetIDPrefix(pk) + ".db")
 		if err == nil {
 			raw, err := diskStore.Get(storeKey)
 			if err == nil {
-				var diskData map[string]interface{}
+				var diskData map[string]any
 				json.Unmarshal([]byte(raw), &diskData)
 				for col, val := range diskData {
 					if len(columns) == 0 || utils.Contains(columns, col) {
 						if schema[col] == "json" {
 							b, _ := json.Marshal(val)
-							var obj interface{}
+							var obj any
 							json.Unmarshal(b, &obj)
 							row[col] = obj
 						} else {

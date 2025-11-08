@@ -10,7 +10,7 @@ import (
 )
 
 // ValidateRecord validates a record against the schema of a specified table.
-func ValidateRecord(db, table string, record map[string]interface{}) error {
+func ValidateRecord(db, table string, record map[string]any) error {
 	// Get the table's schema
 	schema := FullSchema[db][table]
 	if schema == nil {
@@ -20,7 +20,7 @@ func ValidateRecord(db, table string, record map[string]interface{}) error {
 	return validateRecord(record, schema)
 }
 
-func validateRecord(record map[string]interface{}, schema map[string]map[string]string) error {
+func validateRecord(record map[string]any, schema map[string]map[string]string) error {
 	for col, colSchema := range schema {
 		if val, ok := record[col]; ok {
 			if err := validateValue(val, colSchema); err != nil {
@@ -42,7 +42,7 @@ func validateRecord(record map[string]interface{}, schema map[string]map[string]
 
 // ValidatePartialRecord validates only the provided fields in the record
 // without requiring all fields to be present.
-func ValidatePartialRecord(db, table string, record map[string]interface{}) error {
+func ValidatePartialRecord(db, table string, record map[string]any) error {
 	// Get the table's schema
 	schema := FullSchema[db][table]
 	if schema == nil {
@@ -51,7 +51,7 @@ func ValidatePartialRecord(db, table string, record map[string]interface{}) erro
 	return validatePartialRecord(record, schema)
 }
 
-func validatePartialRecord(record map[string]interface{}, schema map[string]map[string]string) error {
+func validatePartialRecord(record map[string]any, schema map[string]map[string]string) error {
 	for col, val := range record {
 		colSchema, exists := schema[col]
 		if !exists {
@@ -64,7 +64,7 @@ func validatePartialRecord(record map[string]interface{}, schema map[string]map[
 	return nil
 }
 
-// func validateValue(value interface{}, colSchema map[string]string) error {
+// func validateValue(value any, colSchema map[string]string) error {
 // 	colType := colSchema["type"]
 // 	switch colType {
 // 	case "string":
@@ -80,7 +80,7 @@ func validatePartialRecord(record map[string]interface{}, schema map[string]map[
 // 			return fmt.Errorf("expected timestamp (int64), got %T", value)
 // 		}
 // 	case "json":
-// 		if _, ok := value.(map[string]interface{}); !ok {
+// 		if _, ok := value.(map[string]any); !ok {
 // 			return fmt.Errorf("expected json object, got %T", value)
 // 		}
 // 	default:
@@ -89,7 +89,7 @@ func validatePartialRecord(record map[string]interface{}, schema map[string]map[
 // 	return nil
 // }
 
-// func validateValue(value interface{}, colSchema map[string]string) error {
+// func validateValue(value any, colSchema map[string]string) error {
 // 	colType := colSchema["type"]
 
 // 	switch colType {
@@ -120,7 +120,7 @@ func validatePartialRecord(record map[string]interface{}, schema map[string]map[
 // 		}
 
 // 	case "json":
-// 		if _, ok := value.(map[string]interface{}); !ok {
+// 		if _, ok := value.(map[string]any); !ok {
 // 			return fmt.Errorf("expected json object, got %T", value)
 // 		}
 
@@ -131,7 +131,7 @@ func validatePartialRecord(record map[string]interface{}, schema map[string]map[
 // 	return nil
 // }
 
-func validateValue(value interface{}, colSchema map[string]string) error {
+func validateValue(value any, colSchema map[string]string) error {
 	colType := colSchema["type"]
 	// isBlank := colSchema["blank"] == "yes"
 
@@ -175,11 +175,11 @@ func validateValue(value interface{}, colSchema map[string]string) error {
 		switch v := value.(type) {
 		case string:
 			// Validate it's valid JSON
-			var temp interface{}
+			var temp any
 			if err := json.Unmarshal([]byte(v), &temp); err != nil {
 				return fmt.Errorf("expected valid JSON string, got: %s", v)
 			}
-		case map[string]interface{}, []interface{}:
+		case map[string]any, []any:
 			// Valid JSON object/array - will be serialized to string
 		default:
 			return fmt.Errorf("expected JSON, got %T", value)

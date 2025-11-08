@@ -10,11 +10,11 @@ import (
 // Update updates an existing record in the specified table.
 // The record must include the "id" field to identify the row to update.
 // Example usage:
-// err := database.Update("mydb", "mytable", map[string]interface{}{"id": "123", "name": "John", "age": 30})
+// err := database.Update("mydb", "mytable", map[string]any{"id": "123", "name": "John", "age": 30})
 // This will update the record with id "123" in "mytable" of "mydb" database.
 // The record can include any fields defined in the table schema.
 // it update with id field
-func Update(db, table string, record map[string]interface{}) error {
+func Update(db, table string, record map[string]any) error {
 	// Check if database exists
 	if !IsDatabaseExists(db) {
 		return errors.New("database does not exist")
@@ -58,7 +58,7 @@ func Update(db, table string, record map[string]interface{}) error {
 					}
 					record[col] = val
 				}
-			}else {
+			} else {
 				if colSchema["type"] == "timestamp" {
 					switch v := record[col].(type) {
 					case float64:
@@ -93,8 +93,8 @@ func Update(db, table string, record map[string]interface{}) error {
 // UpdatePartial updates a subset of fields in an existing record.
 // The record must include the "id" field to identify the row to update.
 // Example usage:
-// err := database.UpdatePartial("mydb", "mytable", map[string]interface{}{"id": "123", "name": "John"})
-func UpdatePartial(db, table string, record map[string]interface{}) error {
+// err := database.UpdatePartial("mydb", "mytable", map[string]any{"id": "123", "name": "John"})
+func UpdatePartial(db, table string, record map[string]any) error {
 	// Check if database exists
 	if !IsDatabaseExists(db) {
 		return errors.New("database does not exist")

@@ -8,18 +8,18 @@ import (
 )
 
 type insertData struct {
-	DB      string                 `json:"db"`
-	Table   string                 `json:"table"`
-	Records map[string]interface{} `json:"records"`
+	DB      string         `json:"db"`
+	Table   string         `json:"table"`
+	Records map[string]any `json:"records"`
 }
 
 type updateData struct {
-	DB        string                 `json:"db"`
-	Table     string                 `json:"table"`
-	Records   map[string]interface{} `json:"records"`
-	Query     string                 `json:"query"`
-	Ids       []string               `json:"ids"`
-	Protopass string                 `json:"protopass"`
+	DB        string         `json:"db"`
+	Table     string         `json:"table"`
+	Records   map[string]any `json:"records"`
+	Query     string         `json:"query"`
+	Ids       []string       `json:"ids"`
+	Protopass string         `json:"protopass"`
 }
 
 type deleteData struct {

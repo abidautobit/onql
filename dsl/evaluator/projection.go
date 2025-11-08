@@ -13,14 +13,14 @@ func (e *Evaluator) EvalProjection() error {
 	if pStmt.Operation != parser.OpStartProjection {
 		return errors.New("expected start projection operation")
 	}
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 	// stmt = e.Plan.NextStatement(true)
 	pos := e.Plan.Pos
 	var endProjectionPos int
 	//handle unwanted datatypes
-	// _,ok := e.Memory[pStmt.Sources[0].SourceValue].([]map[string]interface{})
+	// _,ok := e.Memory[pStmt.Sources[0].SourceValue].([]map[string]any)
 	// Continue with projection logic
-	tableData, ok := e.Memory[pStmt.Sources[0].SourceValue].([]map[string]interface{})
+	tableData, ok := e.Memory[pStmt.Sources[0].SourceValue].([]map[string]any)
 	if !ok {
 		return errors.New("expect table data in projection but got " + fmt.Sprintf("%T", e.Memory[pStmt.Sources[0].SourceValue]))
 	}
@@ -48,7 +48,7 @@ func (e *Evaluator) EvalProjection() error {
 		for _, row := range tableData {
 			// e.Memory[pStmt.Name] = row
 			e.SetMemoryValue(pStmt.Name, row)
-			obj := make(map[string]interface{})
+			obj := make(map[string]any)
 			// Apply projection conditions
 			for {
 				stmt := e.Plan.NextStatement(false)
