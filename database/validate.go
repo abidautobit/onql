@@ -95,6 +95,9 @@ func validateValue(value any, colSchema map[string]string) error {
 	colType := colSchema["type"]
 
 	switch colType {
+	case "string", "timestamp":
+	// Nothing to do in this case
+
 	case "number":
 		switch v := value.(type) {
 		case float64:
