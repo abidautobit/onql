@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// return list of databases names
+// Return list of databases names
 // Example usage:
 //
 //	databases, err := database.GetDatabases()
@@ -16,7 +16,7 @@ func GetDatabases() ([]string, error) {
 	return storemanager.GetDatabases()
 }
 
-// return list of tables names in a database
+// Return list of tables names in a database
 // Example usage:
 //
 //	tables, err := database.GetTables("mydb")
@@ -24,7 +24,7 @@ func GetTables(db string) ([]string, error) {
 	return storemanager.GetTables(db)
 }
 
-// return columns mean schema of a table
+// Return columns mean schema of a table
 // It returns a map structure:
 // map[column][attribute]value
 func GetTableSchema(db, table string) (map[string]map[string]string, error) {
@@ -62,7 +62,7 @@ func GetFullSchema() (map[string]map[string]map[string]map[string]string, error)
 //
 //	err := database.CreateDatabase("mydb")
 func CreateDatabase(name string) error {
-	//validate if already exists
+	// validate if already exists
 	if FullSchema[name] != nil {
 		return fmt.Errorf("database %s already exists", name)
 	}
@@ -75,6 +75,9 @@ func CreateDatabase(name string) error {
 
 	return err
 }
+
+// TODO 2025-11-09: Break validation and creation of table in different function.
+// TODO 2025-11-09: After breaking; write test cases for validation.
 
 // Example usage:
 //
@@ -92,7 +95,6 @@ func CreateDatabase(name string) error {
 //			"blank":   "no",
 //		},
 //	})
-
 func CreateTable(db, table string, schema map[string]map[string]string) error {
 	// validate if database exists
 	if FullSchema[db] == nil {
@@ -149,25 +151,49 @@ func CreateTable(db, table string, schema map[string]map[string]string) error {
 			return fmt.Errorf("column '%s' must define 'default'", col)
 		}
 
+		// check "precision" and "scale" for "number" type
+		if colType == "number" {
+			if precisionStr, hasPrecision := colSchema["precision"]; hasPrecision && precisionStr != "" {
+				precision, err := strconv.Atoi(precisionStr)
+				if err != nil || precision <= 0 {
+					return fmt.Errorf("column '%s' has invalid precision value (must be positive integer)", col)
+				}
+
+				if scaleStr, hasScale := colSchema["scale"]; hasScale && scaleStr != "" {
+					scale, err := strconv.Atoi(scaleStr)
+					if err != nil || scale < 0 {
+						return fmt.Errorf("column '%s' has invalid scale value (must be non-negative integer)", col)
+					}
+
+					if scale > precision {
+						return fmt.Errorf("column '%s' has scale (%d) greater than precision (%d)", col, scale, precision)
+					}
+				}
+			} else if _, hasScale := colSchema["scale"]; hasScale {
+				return fmt.Errorf("column '%s' has scale specified without precision", col)
+			}
+		}
+
 		if colSchema["default"] != "" {
+			var err error
 			var val any = colSchema["default"]
-			if colSchema["type"] == "number" {
-				var err error
-				val, err = strconv.ParseFloat(colSchema["default"], 64)
-				if err != nil {
+
+			switch colSchema["type"] {
+			case "number":
+				if val, err = strconv.ParseFloat(colSchema["default"], 64); err != nil {
 					return fmt.Errorf("column '%s' has invalid default value", col)
 				}
-			} else if colSchema["type"] == "timestamp" {
-				var err error
-				val, err = strconv.ParseInt(colSchema["default"], 10, 64)
-				if err != nil {
+			case "timestamp":
+				if val, err = strconv.ParseInt(colSchema["default"], 10, 64); err != nil {
 					return fmt.Errorf("column '%s' has invalid default value", col)
 				}
 			}
-			if err := validateValue(val, colSchema); err != nil {
+
+			if err = validateValue(val, colSchema); err != nil {
 				return err
 			}
 		}
+
 		// check "blank"
 		blank := strings.ToLower(colSchema["blank"])
 		if blank == "" || !validBlank[blank] {
@@ -281,20 +307,7 @@ func AlterTable(db, table string, alters map[string]map[string]string) error {
 				"blank":   details["blank"],
 			}
 		case "dropColumn":
-
 			delete(schema, details["name"])
-		// case "changeDataType":
-		// 	colName := details["name"]
-		// 	if colSchema, exists := schema[colName]; exists {
-		// 		colSchema["type"] = details["newType"]
-		// 		schema[colName] = colSchema
-		// 	}
-		// case "changeStorageType":
-		// 	colName := details["name"]
-		// 	if colSchema, exists := schema[colName]; exists {
-		// 		colSchema["storage"] = details["newStorage"]
-		// 		schema[colName] = colSchema
-		// 	}
 		default:
 			return fmt.Errorf("unknown alter action: %s", action)
 		}
