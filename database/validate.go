@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"onql/storemanager"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -64,117 +65,64 @@ func validatePartialRecord(record map[string]any, schema map[string]map[string]s
 	return nil
 }
 
-// func validateValue(value any, colSchema map[string]string) error {
-// 	colType := colSchema["type"]
-// 	switch colType {
-// 	case "string":
-// 		if _, ok := value.(string); !ok {
-// 			return fmt.Errorf("expected string, got %T", value)
-// 		}
-// 	case "number":
-// 		if _, ok := value.(float64); !ok {
-// 			return fmt.Errorf("expected number, got %T", value)
-// 		}
-// 	case "timestamp":
-// 		if _, ok := value.(int64); !ok {
-// 			return fmt.Errorf("expected timestamp (int64), got %T", value)
-// 		}
-// 	case "json":
-// 		if _, ok := value.(map[string]any); !ok {
-// 			return fmt.Errorf("expected json object, got %T", value)
-// 		}
-// 	default:
-// 		return fmt.Errorf("unknown column type '%s'", colType)
-// 	}
-// 	return nil
-// }
+func validatePrecisionScale(value float64, precision, scale int) error {
+	valueStr := strconv.FormatFloat(value, 'f', -1, 64)
 
-// func validateValue(value any, colSchema map[string]string) error {
-// 	colType := colSchema["type"]
+	parts := strings.Split(valueStr, ".")
+	integerPart := parts[0]
+	fractionalPart := ""
+	if len(parts) > 1 {
+		fractionalPart = parts[1]
+	}
 
-// 	switch colType {
-// 	case "string":
-// 		if _, ok := value.(string); !ok {
-// 			return fmt.Errorf("expected string, got %T", value)
-// 		}
+	// Remove minus sign
+	integerPart = strings.ReplaceAll(integerPart, "-", "")
 
-// 	case "number":
-// 		// Accept all int and float types
-// 		switch value.(type) {
-// 		case int, int8, int16, int32, int64,
-// 			uint, uint8, uint16, uint32, uint64,
-// 			float32, float64:
-// 			// Valid numeric type ✅
-// 		default:
-// 			return fmt.Errorf("expected number, got %T", value)
-// 		}
+	totalDigits := len(integerPart) + len(fractionalPart)
+	if totalDigits > precision {
+		return fmt.Errorf("value exceeds precision (%d digits, max %d)", totalDigits, precision)
+	}
 
-// 	case "timestamp":
-// 		// Accept all int types as valid timestamp
-// 		switch value.(type) {
-// 		case int, int8, int16, int32, int64,
-// 			uint, uint8, uint16, uint32, uint64:
-// 			// Valid timestamp type ✅
-// 		default:
-// 			return fmt.Errorf("expected timestamp (int), got %T", value)
-// 		}
+	decimalPlaces := len(fractionalPart)
+	if decimalPlaces > scale {
+		return fmt.Errorf("value exceeds scale (%d decimal places, max %d)", decimalPlaces, scale)
+	}
 
-// 	case "json":
-// 		if _, ok := value.(map[string]any); !ok {
-// 			return fmt.Errorf("expected json object, got %T", value)
-// 		}
-
-// 	default:
-// 		return fmt.Errorf("unknown column type '%s'", colType)
-// 	}
-
-// 	return nil
-// }
+	return nil
+}
 
 func validateValue(value any, colSchema map[string]string) error {
 	colType := colSchema["type"]
-	// isBlank := colSchema["blank"] == "yes"
 
 	switch colType {
-	case "string":
-		if _, ok := value.(string); !ok {
-			return fmt.Errorf("expected string, got %T", value)
-		}
-
 	case "number":
 		switch v := value.(type) {
-		case string:
-			// Validate it's a valid number string
-			if _, err := strconv.ParseFloat(v, 64); err != nil {
-				return fmt.Errorf("expected number, got invalid number string: %s", v)
+		case float64:
+			precisionStr, hasPrecision := colSchema["precision"]
+			if !hasPrecision || precisionStr == "" {
+				return nil
 			}
-		case int, int8, int16, int32, int64,
-			uint, uint8, uint16, uint32, uint64,
-			float32, float64:
-			// Valid numeric type - will be converted to string for storage
+			precision, _ := strconv.Atoi(precisionStr)
+
+			scaleStr := colSchema["scale"]
+			scale := 0
+			if scaleStr != "" {
+				scale, _ = strconv.Atoi(scaleStr)
+			}
+
+			if err := validatePrecisionScale(v, precision, scale); err != nil {
+				return err
+			}
+
 		default:
 			return fmt.Errorf("expected number, got %T", value)
-		}
-
-	case "timestamp":
-		switch v := value.(type) {
-		case string:
-			// Validate it's a valid integer string
-			if _, err := strconv.ParseInt(v, 10, 64); err != nil {
-				return fmt.Errorf("expected timestamp, got invalid integer string: %s", v)
-			}
-		case int, int8, int16, int32, int64,
-			uint, uint8, uint16, uint32, uint64:
-			// Valid timestamp type - will be converted to string for storage
-		default:
-			return fmt.Errorf("expected timestamp, got %T", value)
 		}
 
 	case "json":
 		// JSON should be stored as string (serialized JSON)
 		switch v := value.(type) {
 		case string:
-			// Validate it's valid JSON
+			// Validate JSON
 			var temp any
 			if err := json.Unmarshal([]byte(v), &temp); err != nil {
 				return fmt.Errorf("expected valid JSON string, got: %s", v)
@@ -261,11 +209,10 @@ func validateColumnSchema(schema map[string]string) error {
 }
 
 func validateFieldValue(fieldName, value string, validValues []string) error {
-	for _, validValue := range validValues {
-		if value == validValue {
-			return nil
-		}
+	if slices.Contains(validValues, value) {
+		return nil
 	}
+
 	return fmt.Errorf("invalid value for field '%s': %s", fieldName, value)
 }
 
