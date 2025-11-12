@@ -2,9 +2,38 @@ package database
 
 import (
 	"errors"
+	"math"
 	"onql/storemanager"
 	"strconv"
 )
+
+func enforcePrecisionScale(value float64, precision, scale int) (float64, error) {
+	pow := math.Pow(10, float64(scale))
+	rounded := math.Round(value*pow) / pow
+
+	if err := validatePrecisionScale(rounded, precision, scale); err != nil {
+		return 0.0, err
+	}
+
+	return rounded, nil
+}
+
+func processNumber(val float64, colSchema map[string]string) (float64, error) {
+	precisionStr, hasPrecision := colSchema["precision"]
+	if !hasPrecision || precisionStr == "" {
+		return val, nil
+	}
+
+	precision, _ := strconv.Atoi(precisionStr)
+
+	scaleStr := colSchema["scale"]
+	scale := 0
+	if scaleStr != "" {
+		scale, _ = strconv.Atoi(scaleStr)
+	}
+
+	return enforcePrecisionScale(val, precision, scale)
+}
 
 // Insert inserts a new record into the specified table.
 // example usage:
@@ -43,7 +72,11 @@ func Insert(db, table string, record map[string]any) (string, error) {
 					if colSchema["type"] == "timestamp" {
 						record[col] = int64(f)
 					} else if colSchema["type"] == "number" {
-						record[col] = float64(f)
+						val, err := processNumber(f, colSchema)
+						if err != nil {
+							return "", err
+						}
+						record[col] = val
 					}
 				} else {
 					if f, ok := v.(string); ok {
@@ -55,6 +88,11 @@ func Insert(db, table string, record map[string]any) (string, error) {
 							record[col] = val
 						} else if colSchema["type"] == "number" {
 							val, err := strconv.ParseFloat(f, 64)
+							if err != nil {
+								return "", err
+							}
+
+							val, err = processNumber(val, colSchema)
 							if err != nil {
 								return "", err
 							}

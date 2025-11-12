@@ -56,6 +56,11 @@ func Update(db, table string, record map[string]any) error {
 					if err != nil {
 						return err
 					}
+
+					val, err = processNumber(val, colSchema)
+					if err != nil {
+						return err
+					}
 					record[col] = val
 				}
 			} else {
@@ -124,6 +129,11 @@ func UpdatePartial(db, table string, record map[string]any) error {
 					record[col] = val
 				} else if colSchema["type"] == "number" {
 					val, err := strconv.ParseFloat(f, 64)
+					if err != nil {
+						return err
+					}
+
+					val, err = processNumber(val, colSchema)
 					if err != nil {
 						return err
 					}
