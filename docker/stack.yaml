@@ -30,6 +30,7 @@ services:
 
   onql:
     image: autobitdevs/onql:1.3.0
+    user: "0:0"   # runs as root user
     environment: *onql_env
     depends_on:
       nats:
