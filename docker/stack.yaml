@@ -39,14 +39,18 @@ services:
     networks: [appnet]
     restart: unless-stopped
     # Host bind mount for ONQL data:
-    volumes:
-      - type: bind
-        source: ${ONQL_HOST_DIR:-/srv/onql_a/store}
-        target: /app/store
-        read_only: false
+    # volumes:
+    #   - type: bind
+    #     source: ${ONQL_HOST_DIR:-/srv/onql_a/store}
+    #     target: /app/store
+    #     read_only: false
         # For SELinux systems, uncomment:
         # bind:
         #   selinux: z
+    # ✅ Named volume instead of host bind mount
+    volumes:
+      - onql_data:/app/store        
+
     labels:
       com.centurylinklabs.watchtower.enable: "${WATCHTOWER_ENABLE:-false}"
     <<: *resources
@@ -75,3 +79,4 @@ services:
 volumes:
   # NATS state (named volume)
   nats_data: {}
+  onql_data: {}     # ✅ Added this line for named volume
