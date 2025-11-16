@@ -65,6 +65,35 @@ func validatePartialRecord(record map[string]any, schema map[string]map[string]s
 	return nil
 }
 
+func validatePrecisionScaleSchema(colSchema map[string]string, colName string) error {
+	colType := colSchema["type"]
+	if colType != "number" {
+		return nil
+	}
+
+	if precisionStr, hasPrecision := colSchema["precision"]; hasPrecision && precisionStr != "" {
+		precision, err := strconv.Atoi(precisionStr)
+		if err != nil || precision <= 0 {
+			return fmt.Errorf("column %s has invalid precision value (must be positive integer)", colName)
+		}
+
+		if scaleStr, hasScale := colSchema["scale"]; hasScale && scaleStr != "" {
+			scale, err := strconv.Atoi(scaleStr)
+			if err != nil || scale < 0 {
+				return fmt.Errorf("column %s has invalid scale value (must be non-negative integer)", colName)
+			}
+
+			if scale > precision {
+				return fmt.Errorf("column %s has scale (%d) greater than precision (%d)", colName, scale, precision)
+			}
+		}
+	} else if _, hasScale := colSchema["scale"]; hasScale {
+		return fmt.Errorf("column %s has scale specified without precision", colName)
+	}
+
+	return nil
+}
+
 func validatePrecisionScale(value float64, precision, scale int) error {
 	valueStr := strconv.FormatFloat(value, 'f', -1, 64)
 
@@ -182,10 +211,10 @@ func ValidateColumnAlteration(db, table, column string, newSchema map[string]str
 		return errors.New("column does not exist")
 	}
 	// Validate the new schema
-	return validateColumnSchema(newSchema)
+	return validateColumnSchema(newSchema, column)
 }
 
-func validateColumnSchema(schema map[string]string) error {
+func validateColumnSchema(schema map[string]string, column string) error {
 	// Check for required fields
 	requiredFields := []string{"type", "storage", "default", "blank"}
 	for _, field := range requiredFields {
@@ -203,6 +232,11 @@ func validateColumnSchema(schema map[string]string) error {
 	if err := validateFieldValue("blank", schema["blank"], []string{"yes", "no"}); err != nil {
 		return err
 	}
+
+	if err := validatePrecisionScaleSchema(schema, column); err != nil {
+		return err
+	}
+
 	if schema["default"] != "" {
 		if err := validateValue(schema["default"], schema); err != nil {
 			return err
@@ -254,9 +288,11 @@ func ValidateEntity(entityName string, entity *storemanager.Entity, database str
 	if entity.Table == "" {
 		return errors.New("missing table")
 	}
+
 	if !IsTableExists(database, entity.Table) {
 		return errors.New("table does not exist")
 	}
+
 	for fieldName, field := range entity.Fields {
 		if fieldName == "" {
 			return errors.New("field name is required")
@@ -265,7 +301,7 @@ func ValidateEntity(entityName string, entity *storemanager.Entity, database str
 			return fmt.Errorf("field '%s': %w", fieldName, err)
 		}
 	}
-	//validate relations
+	// validate relations
 	for relationName, relation := range entity.Relations {
 		if relationName == "" {
 			return errors.New("relation name is required")
@@ -274,15 +310,7 @@ func ValidateEntity(entityName string, entity *storemanager.Entity, database str
 			return fmt.Errorf("relation '%s': %w", relationName, err)
 		}
 	}
-	//validate contexts
-	for contextName, context := range entity.Context {
-		if contextName == "" {
-			return errors.New("context name is required")
-		}
-		if err := ValidateContext(database, entity.Table, contextName, context); err != nil {
-			return fmt.Errorf("context '%s': %w", contextName, err)
-		}
-	}
+
 	return nil
 }
 
@@ -310,6 +338,7 @@ func ValidateRelation(database string, parentTable string, relation *storemanage
 		return errors.New("missing foreign key field")
 	}
 	rfk := strings.Split(relation.FKField, ":")
+
 	// validate foreign key field
 	switch relation.Type {
 	case "mto", "otm", "oto":
@@ -329,18 +358,5 @@ func ValidateRelation(database string, parentTable string, relation *storemanage
 	default:
 		return errors.New("invalid relation type")
 	}
-	return nil
-}
-
-func ValidateContext(database string, table string, contextName string, contextValue string) error {
-	// if contextName == "" {
-	// 	return errors.New("missing context name")
-	// }
-	// if contextValue == "" {
-	// 	return errors.New("missing context value")
-	// }
-	// if !IsColumnExists(database, table, contextName) {
-	// 	return errors.New("context column does not exist")
-	// }
 	return nil
 }

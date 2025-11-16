@@ -153,24 +153,8 @@ func CreateTable(db, table string, schema map[string]map[string]string) error {
 
 		// check "precision" and "scale" for "number" type
 		if colType == "number" {
-			if precisionStr, hasPrecision := colSchema["precision"]; hasPrecision && precisionStr != "" {
-				precision, err := strconv.Atoi(precisionStr)
-				if err != nil || precision <= 0 {
-					return fmt.Errorf("column '%s' has invalid precision value (must be positive integer)", col)
-				}
-
-				if scaleStr, hasScale := colSchema["scale"]; hasScale && scaleStr != "" {
-					scale, err := strconv.Atoi(scaleStr)
-					if err != nil || scale < 0 {
-						return fmt.Errorf("column '%s' has invalid scale value (must be non-negative integer)", col)
-					}
-
-					if scale > precision {
-						return fmt.Errorf("column '%s' has scale (%d) greater than precision (%d)", col, scale, precision)
-					}
-				}
-			} else if _, hasScale := colSchema["scale"]; hasScale {
-				return fmt.Errorf("column '%s' has scale specified without precision", col)
+			if err := validatePrecisionScaleSchema(colSchema, col); err != nil {
+				return err
 			}
 		}
 
