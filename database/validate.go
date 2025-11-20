@@ -238,10 +238,25 @@ func validateColumnSchema(schema map[string]string, column string) error {
 	}
 
 	if schema["default"] != "" {
-		if err := validateValue(schema["default"], schema); err != nil {
+		var err error
+		var val any = schema["default"]
+
+		switch schema["type"] {
+		case "number":
+			if val, err = strconv.ParseFloat(schema["default"], 64); err != nil {
+				return fmt.Errorf("column '%s' has invalid default value", column)
+			}
+		case "timestamp":
+			if val, err = strconv.ParseInt(schema["default"], 10, 64); err != nil {
+				return fmt.Errorf("column '%s' has invalid default value", column)
+			}
+		}
+
+		if err = validateValue(val, schema); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
