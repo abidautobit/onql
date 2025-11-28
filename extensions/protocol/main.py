@@ -15,7 +15,7 @@ import request_handler
 
 
 async def main():
-    sdk = await SDK.create("protocol", nats_url="nats://localhost:4222")
+    sdk = await SDK.create("protocol", nats_url="nats://nats:4222")
     sc = protocol.Protocol(sdk)
 
     # table = schema.Table()
